@@ -36,7 +36,7 @@ function Meter({
   const colour = level === "danger" ? "var(--danger)" : level === "low" ? "var(--sun)" : tone;
   return (
     <div className="flex min-w-0 flex-col gap-2 px-3.5 py-3 sm:px-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Icon name={icon} size={17} style={{ color: tone }} className="flex-none" />
         <span className="truncate text-[0.92rem] text-ink-2">{label}</span>
         {level !== "good" ? (
@@ -45,7 +45,7 @@ function Meter({
             {level === "danger" ? "Danger" : "Low"}
           </span>
         ) : null}
-        <span className="readout ml-auto text-[1rem] text-ink">{rule ? <Num rule={rule}>{value}</Num> : value}</span>
+        <span className="readout w-full text-[1rem] text-ink sm:ml-auto sm:w-auto">{rule ? <Num rule={rule}>{value}</Num> : value}</span>
       </div>
       <div className="flex gap-[3px]" aria-hidden>
         {Array.from({ length: CELLS }, (_, i) => (

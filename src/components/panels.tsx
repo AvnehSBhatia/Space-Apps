@@ -44,7 +44,7 @@ export function Console({ state, children }: { state: GameState; children: React
             <li
               key={step.phase}
               aria-current={active ? "step" : undefined}
-              className={`relative flex flex-1 items-center gap-2 px-3 py-3 sm:px-5 ${active ? "text-ink" : "text-ink-2"}`}
+              className={`relative flex items-center gap-2 px-3 py-3 sm:flex-1 sm:px-5 ${active ? "flex-1 text-ink" : "text-ink-2"}`}
             >
               <span
                 className={`readout grid h-6 w-6 flex-none place-items-center rounded-full text-[12px] ${
@@ -53,7 +53,7 @@ export function Console({ state, children }: { state: GameState; children: React
               >
                 {done ? <Icon name="check" size={13} strokeWidth={3} /> : i + 1}
               </span>
-              <span className="truncate">{step.label}</span>
+              <span className={`truncate ${active ? "" : "hidden sm:inline"}`}>{step.label}</span>
               {active ? <span className="absolute inset-x-0 -bottom-px h-0.5 bg-dusk" aria-hidden /> : null}
             </li>
           );
