@@ -40,7 +40,7 @@ the crew into one room: night power drops by more than half, but the greenhouse 
 rover's measured ultraviolet index sets how much energy the solar panels collect, and its measured overnight
 low sets how much power the night needs. The player commits to a plan, and only then is the real overnight low
 revealed. Mission Control sends a forecast each sol that is one sol old; during the 2019 solar conjunction
-mission it goes silent, as real contact with Mars does. Older players can install simple forecasting tools on
+mission it goes silent for eleven sols, the real dates NASA held off commanding its Mars missions. Older players can install simple forecasting tools on
 the outpost computer (same as yesterday, an average, the same day last Mars year, a trend line) and test each
 one on days it has not seen before trusting it. Measured on the real record, "same as today" predicts
 tomorrow's sunlight on 92% of sols and no tool beats it in calm weather, yet every tool fails on the day the
