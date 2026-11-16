@@ -1,0 +1,53 @@
+{
+ "source": "NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information)",
+ "sourceUrl": "https://api.nasa.gov/DONKI/GST",
+ "description": "geomagnetic storms",
+ "archived": true,
+ "fetchedAt": "2026-11-16T03:24:30.495Z",
+ "range": {
+  "start": "2026-09-22",
+  "end": "2026-11-16"
+ },
+ "events": [
+  {
+   "id": "2026-10-04T18:00:00-GST-001",
+   "startTime": "2026-10-04T18:00Z",
+   "maxKp": 5.67,
+   "kp": [
+    {
+     "observedTime": "2026-10-04T21:00Z",
+     "kpIndex": 5.67
+    }
+   ],
+   "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/GST/48966/-1"
+  },
+  {
+   "id": "2026-10-10T15:00:00-GST-001",
+   "startTime": "2026-10-10T15:00Z",
+   "maxKp": 7,
+   "kp": [
+    {
+     "observedTime": "2026-10-10T18:00Z",
+     "kpIndex": 7
+    },
+    {
+     "observedTime": "2026-10-10T21:00Z",
+     "kpIndex": 6.67
+    }
+   ],
+   "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/GST/49066/-1"
+  },
+  {
+   "id": "2026-10-31T18:00:00-GST-001",
+   "startTime": "2026-10-31T18:00Z",
+   "maxKp": 6,
+   "kp": [
+    {
+     "observedTime": "2026-10-31T21:00Z",
+     "kpIndex": 6
+    }
+   ],
+   "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/GST/49348/-1"
+  }
+ ]
+}

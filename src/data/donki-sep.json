@@ -1,0 +1,12 @@
+{
+ "source": "NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information)",
+ "sourceUrl": "https://api.nasa.gov/DONKI/SEP",
+ "description": "solar energetic particle events",
+ "archived": true,
+ "fetchedAt": "2026-11-16T03:24:30.495Z",
+ "range": {
+  "start": "2026-09-22",
+  "end": "2026-11-16"
+ },
+ "events": []
+}
