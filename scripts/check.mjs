@@ -79,7 +79,7 @@ try {
       table(`${tool.info.name} alone, on the real record`, bench.benchTool(tool));
       console.log(`\nready: ${tool.info.ready}`);
     } else {
-      const { brain } = require(path.join(out, "brain", "index.js"));
+      const { brain, rangeCoverage } = require(path.join(out, "brain", "index.js"));
       const { game } = require(path.join(out, "game", "index.js"));
       const { TOOLS } = require(path.join(out, "brain", "tools", "index.js"));
       const { allReadings } = require(path.join(out, "lib", "nasa", "readings.js"));
@@ -105,6 +105,14 @@ try {
                 .padStart(6)}`,
             );
           }
+        }
+      }
+      console.log("\nForecast range: how often the truth fell inside it (aim: about 80%)");
+      for (const window of bench.WINDOWS) {
+        const history = allReadings().filter((reading) => reading.sol <= window.toSol);
+        for (const target of ["nightLowC", "sunlight"]) {
+          const { inside, total } = rangeCoverage({ tools: ready }, history, target, 40);
+          console.log(`  ${window.name.padEnd(18)} ${target.padEnd(10)} ${inside} of ${total} (${Math.round((100 * inside) / Math.max(1, total))}%)`);
         }
       }
     }

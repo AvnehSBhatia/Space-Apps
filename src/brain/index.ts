@@ -48,10 +48,25 @@ function plain(value: unknown): unknown {
   return value === undefined ? null : JSON.parse(JSON.stringify(value));
 }
 
-function fitAll(tools: ToolInstance[], series: Series, from: number, end: number, seed: number): unknown[] {
+/** Remembers what each tool learned during one call, so a test flight does not fit the same thing twice. */
+type FitCache = Map<string, unknown>;
+
+function fitAll(
+  tools: ToolInstance[],
+  series: Series,
+  from: number,
+  end: number,
+  seed: number,
+  cache?: FitCache,
+): unknown[] {
   return tools.map((tool) => {
     const impl = moduleOf(tool.id);
-    return impl.fit ? plain(impl.fit({ series, from, end, tool, seed })) : null;
+    if (!impl.fit) return null;
+    const key = `${tool.id}|${JSON.stringify(tool.knobs)}|${from}|${end}|${seed}`;
+    if (cache?.has(key)) return cache.get(key);
+    const params = plain(impl.fit({ series, from, end, tool, seed }));
+    cache?.set(key, params);
+    return params;
   });
 }
 
@@ -74,13 +89,13 @@ function guessAll(
  * 2. Trust and the forecast range are measured on the newest part, which the tools have not seen.
  * 3. Tools then learn again from the whole window, ready to forecast position `end`.
  */
-function learn(tools: ToolInstance[], series: Series, end: number, seed: number): Learned {
+function learn(tools: ToolInstance[], series: Series, end: number, seed: number, cache?: FitCache): Learned {
   const { points, target } = series;
   const from = Math.max(0, end - TRAIN_WINDOW);
   const span = end - from;
   const split = span >= TRUST_WINDOW * 2 ? end - TRUST_WINDOW : from + Math.floor(span / 2);
 
-  const early = fitAll(tools, series, from, split, seed);
+  const early = fitAll(tools, series, from, split, seed, cache);
   const rows: TrustRow[] = [];
   for (let position = Math.max(1, split); position < end; position += 1) {
     const actual = points[position].value;
@@ -94,7 +109,7 @@ function learn(tools: ToolInstance[], series: Series, end: number, seed: number)
     const guess = blend(row.guesses, trust);
     if (guess !== null) misses.push(row.actual - guess);
   }
-  return { trust, range: learnRange(misses, target), params: fitAll(tools, series, from, end, seed) };
+  return { trust, range: learnRange(misses, target), params: fitAll(tools, series, from, end, seed, cache) };
 }
 
 const fallbackValue = (target: Target) => (target === "nightLowC" ? -70 : 2);
@@ -142,14 +157,14 @@ function predict(trained: TrainedBrain, history: SolReading[]): Forecast {
 type Flight = { misses: number[]; copycatMisses: number[]; points: GuessPoint[] };
 
 /** Walk forward over the last `testSols` positions, always learning only from earlier ones. */
-function fly(tools: ToolInstance[], series: Series, testSols: number, seed: number): Flight {
+function fly(tools: ToolInstance[], series: Series, testSols: number, seed: number, cache: FitCache): Flight {
   const { points } = series;
   const flight: Flight = { misses: [], copycatMisses: [], points: [] };
   const from = Math.max(MIN_TRAIN_SOLS, points.length - Math.max(1, Math.floor(testSols)));
   let learned: Learned | null = null;
 
   for (let position = from; position < points.length; position += 1) {
-    if (!learned || (position - from) % RELEARN_EVERY === 0) learned = learn(tools, series, position, seed);
+    if (!learned || (position - from) % RELEARN_EVERY === 0) learned = learn(tools, series, position, seed, cache);
     const actual = points[position].value;
     const sol = points[position].sol;
     const guess = blend(guessAll(tools, series, position, sol, learned.params), learned.trust);
@@ -172,14 +187,15 @@ function testFlight(
   seed: number,
 ): TestFlight {
   const series = toSeries(history, target);
-  const flight = fly(toolsOf(design), series, testSols, seed);
+  const cache: FitCache = new Map();
+  const flight = fly(toolsOf(design), series, testSols, seed, cache);
   const averageMiss = average(flight.misses);
   const count = flight.misses.length;
   const variance = count > 1 ? flight.misses.reduce((sum, miss) => sum + (miss - averageMiss) ** 2, 0) / (count - 1) : 0;
 
   const toolHelp = design.tools.map((tool) => {
     const others = design.tools.filter((other) => other.uid !== tool.uid);
-    const without = average(fly(others.length > 0 ? others : [DEFAULT_TOOL], series, testSols, seed).misses);
+    const without = average(fly(others.length > 0 ? others : [DEFAULT_TOOL], series, testSols, seed, cache).misses);
     return { uid: tool.uid, help: round(without - averageMiss, 3) };
   });
 
@@ -207,6 +223,30 @@ function preview(tool: ToolInstance, history: SolReading[], target: Target, last
     result.push({ sol: points[position].sol, actual: points[position].value, guess: guess === null ? null : round(guess, 3) });
   }
   return result;
+}
+
+/**
+ * How often the real value fell inside the forecast range over the last `testSols` sols,
+ * forecasting each sol from only the sols before it. The range is meant to hold the truth 8 times in 10.
+ */
+export function rangeCoverage(
+  design: BrainDesign,
+  history: SolReading[],
+  target: Target,
+  testSols: number,
+  seed = 1,
+): { inside: number; total: number } {
+  let inside = 0;
+  let total = 0;
+  for (let cut = Math.max(MIN_TRAIN_SOLS, history.length - Math.floor(testSols)); cut < history.length; cut += 1) {
+    const actual = toSeries([history[cut]], target).points[0].value;
+    if (actual === null) continue;
+    const past = history.slice(0, cut);
+    const forecast = predict(train(design, past, target, seed), past);
+    total += 1;
+    if (actual >= forecast.low && actual <= forecast.high) inside += 1;
+  }
+  return { inside, total };
 }
 
 function selfCheck(): CheckResult[] {
@@ -264,6 +304,16 @@ function selfCheck(): CheckResult[] {
     const first = testFlight(everyReadyTool, history, "nightLowC", 30, 1).points[0].guess;
     const second = testFlight(everyReadyTool, changed, "nightLowC", 30, 1).points[0].guess;
     return first === second ? true : `guess moved from ${first} to ${second} when only later sols changed`;
+  });
+
+  check("the night-low range holds the truth between 65% and 95% of the time", () => {
+    for (const lastSol of [1256, 2121, 2534]) {
+      const stretch = allReadings().filter((reading) => reading.sol <= lastSol);
+      const { inside, total } = rangeCoverage(everyReadyTool, stretch, "nightLowC", 40);
+      const share = total > 0 ? inside / total : 0;
+      if (share < 0.65 || share > 0.95) return `sols up to ${lastSol}: ${inside} of ${total} inside the range`;
+    }
+    return true;
   });
 
   check("a short or empty history does not break anything", () => {
