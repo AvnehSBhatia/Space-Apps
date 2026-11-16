@@ -10,18 +10,21 @@ import { clearSave, loadGame, saveGame } from "./format";
 import { GameStage } from "./game-stage";
 import { Icon } from "./icons";
 import { ConjunctionArt, MarsScene } from "./mars-scene";
-import { BetPanel, Console, NightPanel, ReportPanel } from "./panels";
+import { BetPanel, Console, NightPanel } from "./panels";
 import { RuleCardsProvider } from "./rule-cards";
 import { NavLink, SiteNav } from "./site-nav";
 
 type AppState = { game: GameState | null };
 type AppAction = Action | { type: "start"; missionId: MissionId; seed: number; mode: Mode } | { type: "menu" };
 
+/** The morning report and the plan share one screen, so a sol that opens on "report" moves straight to "bet". */
+const openPlan = (state: GameState): GameState => (state.phase === "report" ? game.reduce(state, { type: "goToBet" }) : state);
+
 function appReducer(app: AppState, action: AppAction): AppState {
-  if (action.type === "start") return { game: game.start(action.missionId, action.seed, action.mode) };
+  if (action.type === "start") return { game: openPlan(game.start(action.missionId, action.seed, action.mode)) };
   if (action.type === "menu") return { game: null };
   if (!app.game) return app;
-  return { game: game.reduce(app.game, action) };
+  return { game: openPlan(game.reduce(app.game, action)) };
 }
 
 const newSeed = () => Math.floor(Math.random() * 90000) + 10000;
@@ -30,7 +33,7 @@ function initial(): AppState {
   const params = new URLSearchParams(window.location.search);
   if (params.get("continue") === "1") {
     const saved = loadGame();
-    if (saved) return { game: saved };
+    if (saved) return { game: openPlan(saved) };
   }
   return { game: null };
 }
@@ -195,8 +198,7 @@ function Outpost({ state, dispatch }: { state: GameState; dispatch: (action: Act
             {state.problem}
           </p>
         ) : null}
-        {state.phase === "report" ? <ReportPanel state={state} dispatch={dispatch} /> : null}
-        {state.phase === "bet" ? <BetPanel state={state} dispatch={dispatch} /> : null}
+        {state.phase === "bet" ? <BetPanel key={state.solIndex} state={state} dispatch={dispatch} /> : null}
         {state.phase === "night" ? <NightPanel key={state.outcomes.length} state={state} dispatch={dispatch} /> : null}
       </Console>
 
