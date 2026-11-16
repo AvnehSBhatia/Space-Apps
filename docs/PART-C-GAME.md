@@ -42,12 +42,37 @@ Four fixed strategies, seed 2 (`playWith()` in `src/game/index.ts`):
 
 | Mission | Careful commander | Spend everything | Spend half | Spend nothing |
 |---|---|---|---|---|
-| Calm | survives, 600 | lost on sol 8 | survives, 585 | lost on sol 12 (no air) |
-| Conjunction | survives, 740 | lost on sol 9 | survives, 760 | lost on sol 12 |
+| Calm | survives, 600 | lost on sol 8 | survives, 600 | lost on sol 12 (no air) |
+| Conjunction | survives, 760 | lost on sol 9 | survives, 760 | lost on sol 12 |
 | Dust storm | survives, 820 | lost on sol 27 | lost on sol 29 | lost on sol 12 |
 
-The careful commander keeps two nights of battery and huddles when sunlight is Low and air is above 45.
-No strategy that ignores the data wins the storm, and hoarding always loses. Keep both of those true.
+The careful commander keeps two nights of battery, planning for a night 3 C colder than the last one, and
+huddles when sunlight is Low and air is above 45. No strategy that ignores the data wins the storm, and
+hoarding always loses. Keep both of those true. The self-checks now test the careful commander and greedy play
+on **every** start sol a seed can pick, not just seed 2. Run the table yourself with `src/game/bench.ts`.
+
+What changed after C1/C2 (15 November):
+
+- **Dust storm start window 2056–2064 → 2056–2060.** Sunlight goes Low on sol 2082 and stays Low, so a late
+  start put up to 16 Low sols in the mission and even the careful commander died on seeds 7 and 8. Now there
+  are 8 to 12 Low sols, and the careful commander survives on every seed (650 to 940).
+- **Starting meals 24 → 36.** With 24, every strategy went hungry around sol 7, before any crop could be
+  harvested. 36 reaches the first harvest; 40 let "spend nothing" survive the calm mission, so it stops at 36.
+- **Careful commander plans 3 C colder (`CAREFUL_MARGIN_C`).** It used to end a few hundred Wh short of a spare
+  night. Conjunction is now a tie with "spend half" on every seed instead of a 20-point loss.
+
+## Crew (for Part B)
+
+Exported as `CREW` from `src/game`: **Ravi** (commander), **Mina** (botanist), **Theo** (engineer), **Zara**
+(doctor). The story lines rotate through all four.
+
+## Also exported from `src/game` for Part B
+
+- `leaderboard` (the `LeaderboardApi`, on `localStorage` key `solcast.leaderboard.v1`), `entryFor(state,
+  callSign, classCode, at)`, `makeCallSign(seed)`, `missionCode(state)`, `parseMissionCode(text)`.
+- New rule card ids: `sol-date`, `battery`, `food`, `health`, `forecast`, `conjunction`, `opportunity`,
+  `score` (plus the original `sunlight`, `solar`, `nightLow`, `keepAlive`, `huddle`, `air`, `crop`,
+  `mars-day`).
 
 ## Tonight, in order
 

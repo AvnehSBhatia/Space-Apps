@@ -28,7 +28,23 @@ import type {
 } from "../contracts";
 import { brain } from "../brain";
 import { allReadings } from "../lib/nasa/readings";
+import { makeCallSign, missionCode, parseMissionCode } from "./leaderboard";
 import { RULES, coveredDownToC, keepAliveWh } from "./rules";
+
+/* ------------------------------------------------------------------ */
+/* Crew                                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The four crew. Original characters; the story lines use these names. Part B draws them.
+ * Exported for the UI (not part of the contract, so it can grow without a contract change).
+ */
+export const CREW = [
+  { id: "ravi", name: "Ravi", job: "Commander" },
+  { id: "mina", name: "Mina", job: "Botanist" },
+  { id: "theo", name: "Theo", job: "Engineer" },
+  { id: "zara", name: "Zara", job: "Doctor" },
+] as const;
 
 /* ------------------------------------------------------------------ */
 /* Missions                                                            */
@@ -60,7 +76,7 @@ const MISSIONS: MissionPlan[] = [
     title: "Radio silence",
     blurb: "The Sun slides between Mars and Earth. For days, Mission Control cannot reach you.",
     realEvent:
-      "Solar conjunction, August to September 2019: NASA stopped sending commands to its Mars missions for about two weeks.",
+      "Solar conjunction, 28 August to 7 September 2019: the Sun sat between Earth and Mars, so NASA stopped sending commands to its Mars missions.",
     lengthSols: 30,
     difficulty: 2,
     ready: true,
@@ -77,8 +93,10 @@ const MISSIONS: MissionPlan[] = [
     lengthSols: 34,
     difficulty: 3,
     ready: true,
+    // Sunlight goes Low on sol 2082 and stays Low. This window keeps 8 to 12 Low sols in the mission:
+    // a later start leaves so many dark sols that no plan can keep air, food and heat going at once.
     startMin: 2056,
-    startMax: 2064,
+    startMax: 2060,
     blackout: null,
   },
 ];
@@ -175,11 +193,25 @@ function playNight(
   };
 }
 
+/** Hints for a first-time player, one per sol, on the first sols of the calm mission in guided mode. */
+const GUIDED_HINTS = [
+  "Tip: try keeping two nights of power in the battery.",
+  "Tip: the greenhouse makes air. Give it some power every sol.",
+  "Tip: plants need about eight sols of light to grow.",
+];
+
 function resolve(state: GameState, today: SolReading): SolOutcome {
   const bet = cleanBet(state.bet, state.maxGreenhouseWh);
   const actualLowC = today.minTempC as number;
   const night = playNight(state.outpost, state.solarWh, state.computerWh, bet, actualLowC, today.daylightHours);
   const story: string[] = [];
+  // A different crew member takes the lead each sol, so all four get named.
+  const name = (offset: number) => CREW[(state.solIndex + offset) % CREW.length].name;
+  const yesterday = state.outcomes[state.outcomes.length - 1];
+
+  if (state.sunlight === "Low" && yesterday && yesterday.sunlight !== "Low") {
+    story.push("Dust is hiding the Sun. The panels got much less power.");
+  }
 
   // Crop
   let cropLightWh = night.cropLightAfterWh;
@@ -190,11 +222,12 @@ function resolve(state: GameState, today: SolReading): SolOutcome {
     cropDied = true;
     cropLightWh = 0;
     cropStarvedSols = 0;
-    story.push("The crop went two sols without enough light and died. A new one has to start from seed.");
+    story.push("Two dark sols in a row. The plants died.");
+    story.push(`${name(1)} planted new seeds. They need ${RULES.CROP_MIN_WH / 1000} kWh of light a sol.`);
   } else if (cropLightWh >= RULES.CROP_NEEDS_WH) {
     mealsHarvested = RULES.HARVEST_MEALS;
     cropLightWh = 0;
-    story.push(`Harvest! The crew picked ${RULES.HARVEST_MEALS} meals.`);
+    story.push(`Harvest! ${name(1)} picked ${RULES.HARVEST_MEALS} meals of fresh food.`);
   }
 
   // Food
@@ -206,13 +239,18 @@ function resolve(state: GameState, today: SolReading): SolOutcome {
   let healthChange = 0;
   if (night.hoursCold > 0) {
     healthChange -= Math.min(RULES.HEALTH_COLD_CAP, night.hoursCold * RULES.HEALTH_PER_COLD_HOUR);
-    story.push(`The battery ran out ${night.hoursCold} hours before sunrise. The crew spent them in the cold.`);
+    story.push(`The battery ran out ${night.hoursCold} hours before sunrise.`);
+    story.push(`${name(0)}'s hands are cold. Save more power for the night.`);
+  } else if (bet.huddle) {
+    story.push("Everyone huddled in one room to save power.");
+    story.push(`${name(0)} and ${name(2)} told stories until sunrise. Nobody got cold.`);
   } else {
-    story.push("The outpost stayed warm all night.");
+    story.push(`The heaters ran all night. ${name(0)} slept warm.`);
   }
   if (night.airAfter < RULES.AIR_WARNING) {
     healthChange -= (RULES.AIR_WARNING - night.airAfter) * RULES.HEALTH_PER_AIR_POINT;
-    story.push("The air is getting thin. The crew is tired and slow.");
+    story.push(`The air is thin. ${name(3)} feels tired and slow.`);
+    story.push("Power the greenhouse to make more air.");
   }
   if (hungry) {
     healthChange -= RULES.HEALTH_HUNGRY;
@@ -221,7 +259,10 @@ function resolve(state: GameState, today: SolReading): SolOutcome {
   if (healthChange === 0) healthChange = RULES.HEALTH_RECOVER;
   healthChange = Math.round(healthChange);
   const crewHealth = clamp(state.outpost.crewHealth + healthChange, 0, RULES.START_HEALTH);
-  if (bet.huddle) story.push("The crew huddled in one room, so the greenhouse stayed dark today.");
+  if (bet.huddle) story.push("The greenhouse stayed dark today.");
+  if (state.mode === "guided" && state.mission.id === "calm2016" && state.solIndex < GUIDED_HINTS.length) {
+    story.push(GUIDED_HINTS[state.solIndex]);
+  }
 
   return {
     sol: today.sol,
@@ -471,7 +512,8 @@ function whatIf(state: GameState, bet: Bet, nightLowC: number): WhatIf {
 /** A simple rule that cannot see the future: keep two nights in the battery, huddle when the sky goes dark. */
 export function carefulBet(state: GameState): Bet {
   const lastLow = [...state.history].reverse().find((reading) => reading.minTempC !== null)?.minTempC ?? -75;
-  const oneNight = keepAliveWh(lastLow, false);
+  // Plan for a night a little colder than the last one: no forecast is exact.
+  const oneNight = keepAliveWh(lastLow - RULES.CAREFUL_MARGIN_C, false);
   const available = state.outpost.batteryWh + state.solarWh - state.computerWh;
   if (state.sunlight === "Low") {
     if (state.outpost.airPercent > 45) return { huddle: true, greenhouseWh: 0 };
@@ -494,6 +536,20 @@ export function playWith(missionId: MissionId, seed: number, choose: (state: Gam
   return state;
 }
 
+/** One sentence naming the trade the player made, from how they spent their energy. */
+function tradeLine(state: GameState): string {
+  const { outcomes } = state;
+  if (outcomes.length === 0) return "Every sol is a trade between air, food and a warm night.";
+  const coldNights = outcomes.filter((outcome) => outcome.hoursCold > 0).length;
+  const huddles = outcomes.filter((outcome) => outcome.bet.huddle).length;
+  const lowAir = outcomes.some((outcome) => outcome.outpostAfter.airPercent < RULES.AIR_WARNING);
+  const starved = outcomes.some((outcome) => outcome.cropDied);
+  if (coldNights > 0 && !lowAir) return "You spent on air and food, and paid for it with cold nights.";
+  if (lowAir || (starved && huddles === 0)) return "You saved power for the nights, and the air and plants paid for it.";
+  if (huddles > 0) return `You kept a reserve and huddled ${huddles} ${huddles === 1 ? "time" : "times"} when it counted.`;
+  return "You kept a reserve and spent the rest on air and food.";
+}
+
 function debrief(state: GameState): Debrief {
   const { outcomes } = state;
   const lines: string[] = [];
@@ -514,12 +570,29 @@ function debrief(state: GameState): Debrief {
       ? "The crew never spent a night in the cold."
       : `The crew spent ${coldNights} ${coldNights === 1 ? "night" : "nights"} in the cold.`,
   );
-  lines.push(`You harvested ${state.score.mealsHarvested} meals.`);
+  lines.push(
+    state.score.mealsHarvested > 0
+      ? `You grew ${state.score.mealsHarvested} meals of fresh food.`
+      : "The greenhouse never grew a harvest.",
+  );
+  if (outcomes.length > 0) {
+    const lowestAir = Math.round(Math.min(...outcomes.map((outcome) => outcome.outpostAfter.airPercent)));
+    lines.push(`The air never dropped below ${lowestAir} out of 100.`);
+  }
+  if (state.mission.id === "conjunction2019") {
+    const silent = outcomes.filter((outcome) => {
+      const plan = planOf(state.mission.id);
+      return plan.blackout !== null && outcome.sol >= plan.blackout[0] && outcome.sol <= plan.blackout[1];
+    }).length;
+    if (silent > 0) lines.push(`For ${silent} sols Mission Control could not reach you. You ran the outpost alone.`);
+  }
   if (state.mission.id === "dust2018") {
     lines.push(
-      "In this same storm the solar-powered Opportunity rover lost almost all of its power and never woke up. Curiosity runs on a nuclear power source, so it kept working and recorded the data you just played.",
+      "In this same storm, the solar-powered Opportunity rover ran out of power. It never woke up again.",
+      "Curiosity runs on nuclear power, so it kept working. It recorded the weather you just played.",
     );
   }
+  lines.push(tradeLine(state));
 
   return {
     headline: state.ending === "crewLost" ? "The crew had to be evacuated." : "All four crew made it through.",
@@ -527,6 +600,9 @@ function debrief(state: GameState): Debrief {
     carefulCommander: playWith(state.mission.id, state.seed, carefulBet).score,
   };
 }
+
+const REMS_SOURCE =
+  "Curiosity rover REMS weather station, Gale Crater. NASA/JPL-Caltech/CAB (CSIC-INTA). https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json";
 
 function rules(): RuleCard[] {
   const kWh = (wh: number) => `${wh / 1000} kWh`;
@@ -537,7 +613,71 @@ function rules(): RuleCard[] {
       plain: "How much sunlight reached the ground that sol, measured by the Curiosity rover.",
       formula: "The rover's ultraviolet index: Low, Moderate, High or Very High.",
       kind: "NASA measurement",
-      source: "Curiosity REMS weather station, Gale Crater. NASA/JPL-Caltech/CAB (CSIC-INTA).",
+      source: REMS_SOURCE,
+    },
+    {
+      id: "sol-date",
+      title: "Sol number and Earth date",
+      plain: "Every sol you play really happened. This is the rover's count of Mars days since it landed.",
+      formula: "Sol 0 is the day Curiosity landed, 6 August 2012.",
+      kind: "NASA measurement",
+      source: REMS_SOURCE,
+    },
+    {
+      id: "battery",
+      title: "Battery",
+      plain: "Solar energy you do not spend is stored for the night. Extra energy is lost when it is full.",
+      formula: `Holds ${kWh(RULES.BATTERY_CAPACITY_WH)}. Starts at ${kWh(RULES.START_BATTERY_WH)}. Sunset = battery + solar − computer − greenhouse.`,
+      kind: "game rule",
+      source: null,
+    },
+    {
+      id: "food",
+      title: "Food",
+      plain: "The crew eats every sol. Fresh food comes only from the greenhouse.",
+      formula: `${RULES.MEALS_PER_SOL} meals a sol for four crew. The pantry starts with ${RULES.START_MEALS}.`,
+      kind: "game rule",
+      source: null,
+    },
+    {
+      id: "health",
+      title: "Crew health",
+      plain: "Cold nights, thin air and hunger hurt the crew. Good sols help them recover.",
+      formula: `−${RULES.HEALTH_PER_COLD_HOUR} for each cold hour (at most −${RULES.HEALTH_COLD_CAP}), −${RULES.HEALTH_PER_AIR_POINT} for each air point under ${RULES.AIR_WARNING}, −${RULES.HEALTH_HUNGRY} when hungry, +${RULES.HEALTH_RECOVER} on a good sol. At 0 the crew is evacuated.`,
+      kind: "game rule",
+      source: null,
+    },
+    {
+      id: "forecast",
+      title: "Mission Control's forecast",
+      plain: "Radio takes minutes to reach Mars, and the team needs time to work. So their forecast uses data from yesterday.",
+      formula: "Copycat, Averager, Season Memory and Trend Line, blended by how well each did lately, on data one sol old.",
+      kind: "game rule",
+      source: null,
+    },
+    {
+      id: "conjunction",
+      title: "Solar conjunction",
+      plain: "Sometimes the Sun sits between Earth and Mars. Its glow can scramble radio, so NASA stops sending commands.",
+      formula: "In 2019 NASA held all commands to its Mars missions from 28 August to 7 September (sols 2509 to 2519).",
+      kind: "NASA measurement",
+      source: "NASA/JPL, \"What's Mars Solar Conjunction, and Why Does It Matter?\" https://www.jpl.nasa.gov/news/whats-mars-solar-conjunction-and-why-does-it-matter/",
+    },
+    {
+      id: "opportunity",
+      title: "The Opportunity rover",
+      plain: "A solar-powered rover in another part of Mars. The 2018 dust storm blocked its sunlight and it never woke up.",
+      formula: "Last message 10 June 2018. NASA ended the mission on 13 February 2019 after more than 1,000 unanswered calls.",
+      kind: "NASA measurement",
+      source: "NASA, \"NASA's Record-Setting Opportunity Rover Mission on Mars Comes to End\" https://www.nasa.gov/news-release/nasas-record-setting-opportunity-rover-mission-on-mars-comes-to-end/",
+    },
+    {
+      id: "score",
+      title: "Score",
+      plain: "Points for a healthy crew, food you grew, and power left at the end.",
+      formula: "Crew health × 5 + meals grown × 2 + 20 for each spare night of battery (at most 3).",
+      kind: "game rule",
+      source: null,
     },
     {
       id: "solar",
@@ -553,7 +693,7 @@ function rules(): RuleCard[] {
       plain: "The coldest the air got that night, measured by the Curiosity rover.",
       formula: "Degrees Celsius.",
       kind: "NASA measurement",
-      source: "Curiosity REMS weather station, Gale Crater. NASA/JPL-Caltech/CAB (CSIC-INTA).",
+      source: REMS_SOURCE,
     },
     {
       id: "keepAlive",
@@ -647,17 +787,64 @@ function selfCheck(): CheckResult[] {
     return reduce(loaded, { type: "lockBet" }).outcomes.length === 1 ? true : "loaded state did not play";
   });
 
-  check("the careful commander survives every mission", () => {
+  // Every start sol a seed can pick, for every mission.
+  const everySeed = (plan: MissionPlan) => Array.from({ length: plan.startMax - plan.startMin + 1 }, (_, seed) => seed);
+
+  check("the careful commander survives every mission on every seed", () => {
     for (const plan of MISSIONS) {
-      const end = playWith(plan.id, 2, carefulBet);
-      if (end.ending !== "survived") return `${plan.id}: ${end.ending} on sol ${end.solIndex + 1}`;
+      for (const seed of everySeed(plan)) {
+        const end = playWith(plan.id, seed, carefulBet);
+        if (end.ending !== "survived") return `${plan.id} seed ${seed}: ${end.ending} on sol ${end.solIndex + 1}`;
+      }
     }
     return true;
   });
 
-  check("spending everything loses the dust storm", () => {
-    const end = playWith("dust2018", 2, greedy);
-    return end.ending === "crewLost" ? true : `greedy play ended ${end.ending} with health ${end.outpost.crewHealth}`;
+  check("spending everything loses the dust storm on every seed", () => {
+    const plan = planOf("dust2018");
+    for (const seed of everySeed(plan)) {
+      const end = playWith(plan.id, seed, greedy);
+      if (end.ending !== "crewLost") return `seed ${seed}: greedy play ${end.ending}, health ${end.outpost.crewHealth}`;
+    }
+    return true;
+  });
+
+  check("hoarding every watt loses every mission", () => {
+    for (const plan of MISSIONS) {
+      const end = playWith(plan.id, 2, () => ({ huddle: false, greenhouseWh: 0 }));
+      if (end.ending !== "crewLost") return `${plan.id}: spending nothing ${end.ending}`;
+    }
+    return true;
+  });
+
+  check("story lines are short and name the crew", () => {
+    const end = playWith("dust2018", 2, carefulBet);
+    const lines = end.outcomes.flatMap((outcome) => outcome.story);
+    const long = lines.find((line) => line.split(/\s+/).length > 12);
+    if (long) return `too long: "${long}"`;
+    return CREW.every((member) => lines.some((line) => line.includes(member.name))) ? true : "a crew member is never named";
+  });
+
+  check("guided calm mission gives a hint on its first sols", () => {
+    let state = reduce(start("calm2016", 1, "guided"), { type: "goToBet" });
+    state = reduce(state, { type: "lockBet" });
+    return state.outcomes[0].story.some((line) => line.startsWith("Tip:")) ? true : "no hint on sol 1";
+  });
+
+  check("rule cards have unique ids and every NASA card has a source", () => {
+    const cards = rules();
+    const ids = new Set(cards.map((card) => card.id));
+    if (ids.size !== cards.length) return "two cards share an id";
+    const missing = cards.find((card) => card.kind === "NASA measurement" && !card.source);
+    return missing ? `${missing.id} has no source` : true;
+  });
+
+  check("mission codes round-trip and call signs are friendly", () => {
+    const state = start("dust2018", 4, "builder");
+    const parsed = parseMissionCode(missionCode(state));
+    if (!parsed || parsed.missionId !== "dust2018" || parsed.seed !== 4) return "mission code did not round-trip";
+    if (parseMissionCode("mars-1") !== null) return "accepted an unknown mission";
+    return /^[A-Z][a-z]+ [A-Z][a-z]+ \d{2}$/.test(makeCallSign(7)) ? true : `bad call sign ${makeCallSign(7)}`;
   });
 
   check("fast-forward ends in a state the player can act on", () => {
@@ -672,6 +859,8 @@ function selfCheck(): CheckResult[] {
 
   return results;
 }
+
+export { entryFor, leaderboard, makeCallSign, missionCode, parseMissionCode } from "./leaderboard";
 
 export const game: GameApi = {
   missions: () => MISSIONS.map(publicInfo),

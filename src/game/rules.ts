@@ -40,7 +40,14 @@ export const RULES = {
   CROP_MIN_WH: 2_000,
   HARVEST_MEALS: 40,
   MEALS_PER_SOL: 4,
-  START_MEALS: 24,
+  /**
+   * Nine sols of food: enough to reach the first harvest, which takes about eight sols of light, but not
+   * enough for a player who never lights the greenhouse to finish the calm mission.
+   */
+  START_MEALS: 36,
+
+  /** The careful commander plans for a night this many degrees colder than the last one. */
+  CAREFUL_MARGIN_C: 3,
 
   START_HEALTH: 100,
   HEALTH_PER_COLD_HOUR: 4,
