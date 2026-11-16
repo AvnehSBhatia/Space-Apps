@@ -23,7 +23,7 @@ of living on Mars: air, food and warmth all come out of one battery, and no fore
 
 ## Link to Final Project
 
-[deployed site, for example https://....vercel.app]
+https://solcast-mars.vercel.app
 
 Code: https://github.com/AvnehSBhatia/Space-Apps
 
@@ -54,14 +54,15 @@ by its code, but not memorised.
 physics or a game rule, with its source. A "How it works" page lists every formula. The data is archived, not
 live, and the game says so on every screen.
 
-**Benefits.** It runs in a browser with no download and no account, on school laptops and tablets. Players use
-call signs, never names. [A teacher can run one mission code for a whole class and compare outcomes.]
+**Benefits.** It runs in a browser with no download and no account. Players use call signs, never names. Every
+mission has a code, so a class can play the very same sols and compare outcomes.
 
 **What we hope to achieve.** A child who finishes the dust storm mission should be able to say why a Mars base
 needs spare energy, and why NASA is developing nuclear power for crewed bases.
 
-**Tools.** TypeScript, Next.js, React, Tailwind CSS. The forecasting tools and game rules are plain TypeScript
-with no machine-learning library. [Add design, audio and hosting tools.]
+**Tools.** TypeScript, Next.js, React, Tailwind CSS, and three.js with React Three Fiber for the 3D outpost and
+the Mars globe, which are drawn entirely in code. The forecasting tools and game rules are plain TypeScript
+with no machine-learning library. Hosted on Vercel.
 
 ## Use of Super Intelligence (SI)
 
@@ -95,7 +96,7 @@ logos, flags or mission identifiers.
 ## Space Agency Partner Data and Other References
 
 - REMS was built by Spain's Centro de Astrobiología (CAB, CSIC-INTA).
-- Next.js, React, Tailwind CSS, TypeScript (open source).
-- Fonts: [Baloo 2 and Nunito, SIL Open Font License, via Google Fonts].
+- Next.js, React, Tailwind CSS, TypeScript, three.js, React Three Fiber and drei (all open source).
+- Fonts: Sora, Figtree and Martian Mono, SIL Open Font License, via Google Fonts.
 - [Every image, sound, icon set and library we used, with its licence.]
 - [Any code reused from our own earlier projects.]

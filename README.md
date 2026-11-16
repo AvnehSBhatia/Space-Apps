@@ -8,6 +8,8 @@ record. Every Mars day they choose how much solar energy to spend growing air an
 and then the rover's real measurements decide what happens to the crew. It runs in a browser with no download
 and no account.
 
+**Play it: https://solcast-mars.vercel.app**
+
 **Submission closes Sunday 15 November 2026 at 11:59 p.m. local time.** See [SUBMISSION.md](SUBMISSION.md).
 
 ## Start here
