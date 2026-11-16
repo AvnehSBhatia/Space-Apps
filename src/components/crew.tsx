@@ -1,10 +1,7 @@
 "use client";
 
 import type { GameState } from "@/contracts";
-import { SUNLIGHT_WORD, niceDate } from "./format";
 import { Icon, type IconName } from "./icons";
-import { MarsScene } from "./mars-scene";
-import { Num } from "./rule-cards";
 
 /** The crew is shown as four suit colours, never as drawn people. */
 const SUITS = ["#ff4a1f", "#7cb8ec", "#b9d36a", "#f2b24a"];
@@ -35,7 +32,7 @@ export const MOOD: Record<Mood, { icon: IconName; word: string; tone: string }> 
 export function CrewStatus({ mood }: { mood: Mood }) {
   const m = MOOD[mood];
   return (
-    <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-haze/85 px-3 py-1.5 text-[0.95rem] font-medium text-ink backdrop-blur">
+    <div className="hud inline-flex items-center gap-3 px-3.5 py-2 text-[0.95rem] text-ink">
       <span className="flex -space-x-1.5" aria-hidden>
         {SUITS.map((colour, i) => (
           <svg key={colour} viewBox="0 0 20 20" width="22" height="22">
@@ -53,7 +50,7 @@ export function CrewStatus({ mood }: { mood: Mood }) {
   );
 }
 
-function Confetti() {
+export function Confetti() {
   const colours = ["#ff4a1f", "#f2b24a", "#6fd3a6", "#7cb8ec", "#b9d36a"];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -64,46 +61,6 @@ function Confetti() {
           style={{ left: `${(i * 41) % 100}%`, background: colours[i % colours.length], animationDelay: `${(i % 6) * 0.1}s` }}
         />
       ))}
-    </div>
-  );
-}
-
-const CHIP = "inline-flex items-center gap-2 rounded-full border border-white/10 bg-haze/85 px-3 py-1.5 text-[0.95rem] font-medium text-ink backdrop-blur";
-
-/** The outpost banner: Gale Crater drawn in SVG. The sky follows the real sunlight; chips carry the data. */
-export function OutpostScene({ state }: { state: GameState }) {
-  const mood = moodOf(state);
-  const lost = state.ending === "crewLost";
-  const night = state.phase === "night";
-  const weather = night ? "night" : state.sunlight;
-
-  return (
-    <div className="relative h-56 overflow-hidden rounded-[16px] border border-line bg-deep sm:h-64 lg:h-[19rem]">
-      <MarsScene
-        weather={weather}
-        className="absolute inset-0 h-full w-full"
-        title={night ? "The outpost at night in Gale Crater" : `The outpost in Gale Crater, sunlight ${SUNLIGHT_WORD[state.sunlight]}`}
-      />
-      <span className={`${CHIP} absolute left-3 top-3 sm:left-4 sm:top-4`}>
-        <Icon name="book" size={16} className="text-ink-2" />
-        {niceDate(state.todayEarthDate)}
-      </span>
-      {!night ? (
-        <span className={`${CHIP} absolute right-3 top-14 sm:right-4 sm:top-4`}>
-          <Icon name="sun" size={17} className="text-sun" />
-          Sunlight <Num rule="sunlight">{SUNLIGHT_WORD[state.sunlight]}</Num>
-        </span>
-      ) : null}
-      <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
-        {lost ? (
-          <span className={CHIP}>
-            <Icon name="rocket" size={17} className="text-dusk" /> The crew was flown home safely.
-          </span>
-        ) : (
-          <CrewStatus mood={mood} />
-        )}
-      </div>
-      {mood === "harvest" ? <Confetti /> : null}
     </div>
   );
 }

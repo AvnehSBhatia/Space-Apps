@@ -4,15 +4,14 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 import type { Action, GameState, MissionId, Mode } from "@/contracts";
 import { game } from "@/game";
 import { BrainBay } from "./brain-bay";
-import { OutpostScene } from "./crew";
 import { DataCredits } from "./data-credits";
 import { DebriefScreen } from "./debrief";
 import { clearSave, loadGame, saveGame } from "./format";
-import { Gauges } from "./gauges";
+import { GameStage } from "./game-stage";
 import { Icon } from "./icons";
 import { ConjunctionArt, MarsScene } from "./mars-scene";
-import { BetPanel, NightPanel, ReportPanel } from "./panels";
-import { Num, RuleCardsProvider } from "./rule-cards";
+import { BetPanel, Console, NightPanel, ReportPanel } from "./panels";
+import { RuleCardsProvider } from "./rule-cards";
 import { NavLink, SiteNav } from "./site-nav";
 
 type AppState = { game: GameState | null };
@@ -173,34 +172,30 @@ function Outpost({ state, dispatch }: { state: GameState; dispatch: (action: Act
   const closeBay = useCallback(() => setBayOpen(false), []);
 
   return (
-    <div className="flex flex-col gap-4 py-2">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-ink-2">{state.mission.title}</p>
-          <h1 className="tnum text-3xl sm:text-4xl">
-            <Num rule="mars-day">Sol</Num> {state.solIndex + 1} <span className="text-ink-2">of {state.mission.lengthSols}</span>
-          </h1>
-        </div>
-        {hasBay ? (
-          <button className="btn btn-quiet" onClick={() => setBayOpen(true)}>
-            <Icon name="brain" size={20} className="text-dusk" />
-            Brain Bay{state.design.tools.length > 0 ? ` (${state.design.tools.length})` : ""}
+    <div className="flex flex-col py-2">
+      <h1 className="sr-only">
+        {state.mission.title}, sol {state.solIndex + 1} of {state.mission.lengthSols}
+      </h1>
+      {hasBay ? (
+        <div className="mb-3 flex justify-end">
+          <button className="btn btn-quiet min-h-11 text-[0.98rem]" onClick={() => setBayOpen(true)}>
+            <Icon name="brain" size={18} className="text-dusk" />
+            Brain Bay{state.design.tools.length > 0 ? ` (${state.design.tools.length} installed)` : ""}
           </button>
-        ) : null}
-      </div>
-
-      <OutpostScene state={state} />
-      <Gauges outpost={state.outpost} />
-
-      {state.problem && state.phase !== "bet" ? (
-        <p className="rounded-2xl bg-sun-soft px-4 py-3" role="status">
-          {state.problem}
-        </p>
+        </div>
       ) : null}
 
-      {state.phase === "report" ? <ReportPanel state={state} dispatch={dispatch} /> : null}
-      {state.phase === "bet" ? <BetPanel state={state} dispatch={dispatch} /> : null}
-      {state.phase === "night" ? <NightPanel key={state.outcomes.length} state={state} dispatch={dispatch} /> : null}
+      <GameStage state={state} />
+      <Console state={state}>
+        {state.problem && state.phase !== "bet" ? (
+          <p className="mb-5 rounded-[10px] bg-sun-soft px-4 py-3" role="status">
+            {state.problem}
+          </p>
+        ) : null}
+        {state.phase === "report" ? <ReportPanel state={state} dispatch={dispatch} /> : null}
+        {state.phase === "bet" ? <BetPanel state={state} dispatch={dispatch} /> : null}
+        {state.phase === "night" ? <NightPanel key={state.outcomes.length} state={state} dispatch={dispatch} /> : null}
+      </Console>
 
       {hasBay && bayOpen ? <BrainBay state={state} dispatch={dispatch} onClose={closeBay} /> : null}
     </div>
