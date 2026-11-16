@@ -8,15 +8,17 @@ const day = (iso: string) => iso.slice(0, 10);
  */
 export function DataCredits() {
   return (
-    <footer className="border-t border-black/10 px-6 py-6 text-xs leading-relaxed text-black/60">
-      <p>
-        Space weather: NASA DONKI, {spaceWeather.range.start} to {spaceWeather.range.end}. Mars weather:
-        Curiosity rover REMS station, sols {marsWeather.range.firstSol} to {marsWeather.range.lastSol} (
-        {marsWeather.credit}). Archived data saved on {day(spaceWeather.fetchedAt)}; it is real, not live.
-      </p>
-      <p className="mt-2">
-        Built for the 2026 NASA Space Apps Challenge. Not affiliated with or endorsed by NASA.
-      </p>
+    <footer className="mt-auto border-t border-line px-4 py-6 text-sm leading-relaxed text-ink-2 sm:px-6">
+      <div className="mx-auto max-w-6xl">
+        <p>
+          Mars weather: Curiosity rover REMS station, sols {marsWeather.range.firstSol} to {marsWeather.range.lastSol} (
+          {marsWeather.credit}). Space weather: NASA DONKI, {spaceWeather.range.start} to {spaceWeather.range.end}. Archived
+          data saved on {day(spaceWeather.fetchedAt)}; it is real, not live.
+        </p>
+        <p className="mt-1">
+          Built for the 2026 NASA Space Apps Challenge. Not affiliated with or endorsed by NASA.
+        </p>
+      </div>
     </footer>
   );
 }

@@ -40,12 +40,12 @@ function describe(forecast: Forecast): string {
 function Gauge({ label, value, max, text }: { label: string; value: number; max: number; text: string }) {
   const percent = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div className="rounded-lg border border-black/10 bg-black/5 p-3">
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
       <div className="flex justify-between text-sm">
         <span>{label}</span>
         <span className="font-mono">{text}</span>
       </div>
-      <div className="mt-2 h-2 rounded bg-black/10">
+      <div className="mt-2 h-2 rounded bg-white/10">
         <div className="h-2 rounded bg-emerald-400" style={{ width: `${percent}%` }} />
       </div>
     </div>
@@ -58,7 +58,7 @@ function Checks({ title, results }: { title: string; results: CheckResult[] }) {
       <p className="font-medium">{title}</p>
       <ul className="mt-1 space-y-1 font-mono text-xs">
         {results.map((result) => (
-          <li key={result.name} className={result.pass ? "text-emerald-700" : "text-red-700"}>
+          <li key={result.name} className={result.pass ? "text-emerald-300" : "text-red-300"}>
             {result.pass ? "PASS" : "FAIL"} {result.name}
             {result.pass ? "" : `: ${result.detail}`}
           </li>
@@ -102,16 +102,16 @@ export default function Play() {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-10">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 rounded-3xl bg-ink px-6 py-10 text-white">
         <header className="flex flex-col gap-2">
-          <p className="font-mono text-xs uppercase tracking-widest text-black/60">Test harness, not the final UI</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-white/50">Test harness, not the final UI</p>
           <h1 className="text-3xl font-semibold">{state.mission.title}</h1>
-          <p className="text-black/70">{state.mission.blurb}</p>
+          <p className="text-white/70">{state.mission.blurb}</p>
           <div className="flex flex-wrap gap-2 text-sm">
             {game.missions().map((mission) => (
               <button
                 key={mission.id}
-                className="rounded border border-black/20 px-3 py-1 hover:bg-black/10"
+                className="rounded border border-white/20 px-3 py-1 hover:bg-white/10"
                 onClick={() => restart(mission.id, state.mode, state.seed)}
               >
                 {mission.title}
@@ -120,14 +120,14 @@ export default function Play() {
             {(["guided", "builder", "lab"] as Mode[]).map((mode) => (
               <button
                 key={mode}
-                className={`rounded border px-3 py-1 ${state.mode === mode ? "border-emerald-400" : "border-black/20"}`}
+                className={`rounded border px-3 py-1 ${state.mode === mode ? "border-emerald-400" : "border-white/20"}`}
                 onClick={() => restart(state.mission.id, mode, state.seed)}
               >
                 {mode}
               </button>
             ))}
             <button
-              className="rounded border border-black/20 px-3 py-1 hover:bg-black/10"
+              className="rounded border border-white/20 px-3 py-1 hover:bg-white/10"
               onClick={() => restart(state.mission.id, state.mode, Math.floor(Math.random() * 100000))}
             >
               New seed
@@ -147,11 +147,11 @@ export default function Play() {
           />
         </section>
 
-        <section className="rounded-lg border border-black/10 p-4 text-sm">
+        <section className="rounded-lg border border-white/10 p-4 text-sm">
           <p className="font-medium">
             Sol {state.solIndex + 1} of {state.mission.lengthSols} (rover sol {state.todaySol}, {state.todayEarthDate})
           </p>
-          <ul className="mt-2 space-y-1 text-black/80">
+          <ul className="mt-2 space-y-1 text-white/80">
             <li>
               Sunlight today: {state.sunlight.replace("_", " ")}, so the panels collect {kWh(state.solarWh)}
             </li>
@@ -170,7 +170,7 @@ export default function Play() {
             </li>
             <li>Computer power today: {kWh(state.computerWh)}</li>
           </ul>
-          {state.problem ? <p className="mt-2 text-red-700">{state.problem}</p> : null}
+          {state.problem ? <p className="mt-2 text-red-300">{state.problem}</p> : null}
         </section>
 
         {state.phase === "report" ? (
@@ -180,7 +180,7 @@ export default function Play() {
         ) : null}
 
         {state.phase === "bet" ? (
-          <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 text-sm">
+          <section className="flex flex-col gap-3 rounded-lg border border-white/10 p-4 text-sm">
             <label className="flex flex-col gap-1">
               <span>
                 Greenhouse lights: {kWh(state.bet.greenhouseWh)} of {kWh(state.maxGreenhouseWh)}
@@ -205,7 +205,7 @@ export default function Play() {
               />
               Huddle in one room (greenhouse off today)
             </label>
-            <ul className="space-y-1 text-black/80">
+            <ul className="space-y-1 text-white/80">
               <li>Battery at sunset: {kWh(preview.batteryAtSunsetWh)}</li>
               <li>That covers nights down to {preview.coveredDownToC} C</li>
               <li>
@@ -220,11 +220,11 @@ export default function Play() {
         ) : null}
 
         {state.phase === "night" && lastOutcome ? (
-          <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 text-sm">
+          <section className="flex flex-col gap-3 rounded-lg border border-white/10 p-4 text-sm">
             <p className="font-medium">
               The real overnight low was {lastOutcome.actualLowC} C. The night needed {kWh(lastOutcome.keepAliveWh)}.
             </p>
-            <ul className="list-disc space-y-1 pl-5 text-black/80">
+            <ul className="list-disc space-y-1 pl-5 text-white/80">
               {lastOutcome.story.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -233,7 +233,7 @@ export default function Play() {
               <button className="rounded bg-emerald-500 px-4 py-3 font-medium text-black" onClick={() => dispatch({ type: "nextSol" })}>
                 Next sol
               </button>
-              <button className="rounded border border-black/20 px-4 py-3" onClick={() => dispatch({ type: "fastForward" })}>
+              <button className="rounded border border-white/20 px-4 py-3" onClick={() => dispatch({ type: "fastForward" })}>
                 Fast-forward
               </button>
             </div>
@@ -243,7 +243,7 @@ export default function Play() {
         {state.phase === "ended" ? (
           <section className="flex flex-col gap-2 rounded-lg border border-emerald-400/40 p-4 text-sm">
             <p className="text-lg font-medium">{game.debrief(state).headline}</p>
-            <ul className="list-disc space-y-1 pl-5 text-black/80">
+            <ul className="list-disc space-y-1 pl-5 text-white/80">
               {game.debrief(state).lines.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -255,7 +255,7 @@ export default function Play() {
         ) : null}
 
         {state.availableTools.length > 0 ? (
-          <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 text-sm">
+          <section className="flex flex-col gap-3 rounded-lg border border-white/10 p-4 text-sm">
             <p className="font-medium">Brain Bay</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {brain
@@ -266,23 +266,23 @@ export default function Play() {
                     key={tool.id}
                     disabled={!tool.ready || (state.phase !== "report" && state.phase !== "bet")}
                     className={`rounded border p-3 text-left disabled:opacity-40 ${
-                      installed.has(tool.id) ? "border-emerald-400 bg-emerald-400/10" : "border-black/20"
+                      installed.has(tool.id) ? "border-emerald-400 bg-emerald-400/10" : "border-white/20"
                     }`}
                     onClick={() => toggleTool(tool.id)}
                   >
                     <span className="font-medium">{tool.name}</span>{" "}
-                    <span className="text-xs text-black/60">
+                    <span className="text-xs text-white/50">
                       {tool.realName}, {kWh(tool.energyWhPerSol)} a sol{tool.ready ? "" : ", not built yet"}
                     </span>
-                    <span className="mt-1 block text-black/70">{tool.blurb}</span>
+                    <span className="mt-1 block text-white/70">{tool.blurb}</span>
                   </button>
                 ))}
             </div>
-            <button className="self-start rounded border border-black/20 px-3 py-2" onClick={runTestFlight}>
+            <button className="self-start rounded border border-white/20 px-3 py-2" onClick={runTestFlight}>
               Test flight on the last 30 sols
             </button>
             {flights ? (
-              <ul className="space-y-1 font-mono text-xs text-black/80">
+              <ul className="space-y-1 font-mono text-xs text-white/80">
                 <li>
                   Tonight low: off by {flights.nightLow.averageMiss} C, give or take {flights.nightLow.missNoise}. Copycat
                   alone: {flights.nightLow.copycatMiss} C.
@@ -301,9 +301,9 @@ export default function Play() {
           </section>
         ) : null}
 
-        <section className="flex flex-col gap-3 rounded-lg border border-black/10 p-4 text-sm">
+        <section className="flex flex-col gap-3 rounded-lg border border-white/10 p-4 text-sm">
           <button
-            className="self-start rounded border border-black/20 px-3 py-2"
+            className="self-start rounded border border-white/20 px-3 py-2"
             onClick={() => setChecks({ brain: brain.selfCheck(), game: game.selfCheck() })}
           >
             Run self-checks

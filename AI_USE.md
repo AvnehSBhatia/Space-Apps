@@ -15,6 +15,8 @@ Add a row every time an AI tool produces something that ends up in the project. 
 | 2026-11-15 | Claude Code (Anthropic) | Part C: balance tuning, crew story lines, debrief, guided hints, rule cards with NASA sources, localStorage leaderboard, balance bench and self-checks | `src/game/`; `Co-Authored-By` trailer |
 | 2026-11-15 | Claude Code (Anthropic) | Drafts of the spec, the three part briefs, the demo script and the project page text | `docs/` |
 | 2026-11-15 | Claude Code (Anthropic) with Sonnet, Opus and Fable subagents | The Part A brain (tool files, trust, range, engine checks) and the rewritten `docs/PART-A-BRAIN.md` | `src/brain`, on the `brain` branch |
+| 2026-11-15 | Claude Code (Anthropic) | The game UI (Part B): screens, components, styles and icons | `src/app`, `src/components`; `Co-Authored-By` trailer |
+| 2026-11-15 | OpenAI image generation via Codex CLI, directed by Claude Code | Design mockups used only as layout references. No AI image ships in the game: every illustration is hand-built SVG in `src/components/mars-scene.tsx` | Not in the repo |
 
 ## How we mark it
 

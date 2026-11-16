@@ -1,19 +1,374 @@
 @import "tailwindcss";
 
+/*
+ * SolCast design tokens.
+ * Mars sunsets are blue, so the primary is a dusk blue; butterscotch is the dust and the sun.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #000000;
+  /* Dealt by the taste skill: graphite-safety-orange, Sora / Figtree + Martian Mono, radius soft.
+     Graphite is the rover's instrument panel; the orange is Mars dust. */
+  --haze: #18191b; /* page ground */
+  --card: #222427; /* surface */
+  --line: #33353a; /* one hairline */
+  --ink: #eff0f1; /* text */
+  --ink-2: #9c9ea3; /* labels and meta only */
+  --dusk: #ff4a1f; /* the one action colour */
+  --dusk-deep: #ff6b45;
+  --dusk-soft: rgb(255 74 31 / 0.13);
+  --on-action: #18191b;
+  --sun: #f2b24a;
+  --sun-soft: rgb(242 178 74 / 0.13);
+  --rust: #ff4a1f;
+  --air: #6fd3a6;
+  --air-soft: rgb(111 211 166 / 0.12);
+  --battery: #7cb8ec;
+  --battery-soft: rgb(124 184 236 / 0.12);
+  --food: #b9d36a;
+  --food-soft: rgb(185 211 106 / 0.12);
+  --danger: #ff6b5e;
+  --danger-soft: rgb(255 107 94 / 0.14);
+  --deep: #111214; /* night panel */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-haze: var(--haze);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-dusk: var(--dusk);
+  --color-dusk-deep: var(--dusk-deep);
+  --color-dusk-soft: var(--dusk-soft);
+  --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
+  --color-rust: var(--rust);
+  --color-air: var(--air);
+  --color-air-soft: var(--air-soft);
+  --color-battery: var(--battery);
+  --color-battery-soft: var(--battery-soft);
+  --color-food: var(--food);
+  --color-food-soft: var(--food-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-deep: var(--deep);
+  --color-on-action: var(--on-action);
+  --font-display: var(--font-display-face), system-ui, sans-serif;
+  --font-sans: var(--font-body-face), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, Menlo, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--haze);
+  color: var(--ink);
+  font-family: var(--font-body-face), system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  color-scheme: dark;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display-face), system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+h1 {
+  letter-spacing: -0.045em;
+}
+
+/* Instrument readouts: numbers and small data labels. */
+.readout {
+  font-family: var(--font-mono-face), ui-monospace, Menlo, monospace;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 52px;
+  padding: 0.75rem 1.4rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 120ms ease,
+    box-shadow 160ms ease;
+  user-select: none;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--dusk);
+  color: var(--on-action);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--dusk-deep);
+}
+.btn-quiet {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-quiet:hover:not(:disabled) {
+  border-color: #4a4d53;
+  background: #2a2c30;
+}
+.btn-ghost-dark {
+  background: transparent;
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.28);
+}
+.btn-ghost-dark:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.08);
+}
+
+:focus-visible {
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* Greenhouse slider */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  height: 8px;
+  background: linear-gradient(to right, var(--dusk) 0%, var(--dusk) var(--fill, 0%), #3a3d42 var(--fill, 0%), #3a3d42 100%);
+  cursor: pointer;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 6px solid var(--dusk);
+  box-shadow: 0 0 0 4px var(--haze);
+}
+.slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 6px solid var(--dusk);
+  box-shadow: 0 0 0 4px var(--haze);
+}
+.slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  flex: none;
+  border-radius: 999px;
+  background: #3a3d42;
+  transition: background-color 180ms ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 180ms ease;
+}
+.switch[data-on="true"] {
+  background: var(--dusk);
+}
+.switch[data-on="true"]::after {
+  transform: translateX(22px);
+}
+
+.bar-fill {
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.thermo-fill {
+  transition: height 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The one orchestrated moment: the night reveal. */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tag-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.6) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg);
+  }
+}
+@keyframes dust-drift {
+  from {
+    transform: translateX(-12%);
+  }
+  to {
+    transform: translateX(12%);
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translateY(-8px) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(120px) rotate(400deg);
+  }
+}
+@keyframes waiting {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.reveal {
+  animation: reveal-up 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.real-tag {
+  animation: tag-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 250ms;
+}
+.dust {
+  animation: dust-drift 14s ease-in-out infinite alternate;
+}
+.twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+.confetti-bit {
+  animation: confetti 1.8s ease-in forwards;
+}
+.waiting-dot {
+  animation: waiting 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Game HUD: dark glass panels with orange corner brackets. */
+.hud {
+  position: relative;
+  background-color: rgb(17 18 20 / 0.74);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgb(255 255 255 / 0.07);
+  border-radius: 8px;
+}
+.hud::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 8px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--dusk), var(--dusk)) left top / 12px 2px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) left top / 2px 12px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) right top / 12px 2px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) right top / 2px 12px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) left bottom / 12px 2px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) left bottom / 2px 12px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) right bottom / 12px 2px no-repeat,
+    linear-gradient(var(--dusk), var(--dusk)) right bottom / 2px 12px no-repeat;
+  opacity: 0.85;
+}
+
+/* Segmented meter cells. */
+.cell {
+  height: 9px;
+  flex: 1;
+  border-radius: 2px;
+  background: #2e3035;
+  transition: background-color 300ms ease;
+}
+
+/* Dotted leader rows in the console: label ........ value */
+.leader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.leader::after {
+  content: "";
+  order: 1;
+  flex: 1;
+  border-bottom: 1px dotted #45484e;
+  transform: translateY(-4px);
+}
+.leader > :last-child {
+  order: 2;
 }
