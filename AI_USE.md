@@ -10,6 +10,9 @@ Add a row every time an AI tool produces something that ends up in the project. 
 | Date | Tool | What it produced | Where it is |
 |---|---|---|---|
 | 2026-11-15 | Claude Code (Anthropic) | Initial project scaffold: NASA data fetch script, data helpers, placeholder page, CI, README and submission checklist | Initial commit; see the `Co-Authored-By` trailer in the commit message |
+| 2026-11-15 | Claude Code (Anthropic) | Shared contracts, reference implementations of the brain (`src/brain`) and the game rules (`src/game`), and the `/play` test harness | Second commit; `Co-Authored-By` trailer |
+| 2026-11-15 | Claude Code (Anthropic) | Twelve simulated judge reviews of the concept against the official rubric; their feedback changed the design | Summarised in `docs/SPEC.md` |
+| 2026-11-15 | Claude Code (Anthropic) | Drafts of the spec, the three part briefs, the demo script and the project page text | `docs/` |
 
 ## How we mark it
 

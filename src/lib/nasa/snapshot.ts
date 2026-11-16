@@ -1,10 +1,10 @@
 // Archived NASA data, saved by `npm run data:fetch` into src/data/.
 // Import from here in game code. Everything is real, recorded data; none of it is live.
 
-import cmeFile from "@/data/donki-cme.json";
-import gstFile from "@/data/donki-gst.json";
-import sepFile from "@/data/donki-sep.json";
-import marsFile from "@/data/mars-weather-curiosity.json";
+import cmeFile from "../../data/donki-cme.json";
+import gstFile from "../../data/donki-gst.json";
+import sepFile from "../../data/donki-sep.json";
+import marsFile from "../../data/mars-weather-curiosity.json";
 
 /** Coronal mass ejection: a cloud of charged gas thrown off the Sun. */
 export type CmeEvent = {
@@ -43,9 +43,12 @@ export type MarsSol = {
   minTempC: number | null;
   maxTempC: number | null;
   pressurePa: number | null;
+  /** The rover's measured ultraviolet index: how much sunlight reached the ground. */
+  uvIndex: "Low" | "Moderate" | "High" | "Very_High" | null;
+  /** Solar longitude, 0 to 360: where Mars is in its year. */
+  solarLongitude: number | null;
   sunrise: string | null;
   sunset: string | null;
-  sky: string | null;
 };
 
 export const spaceWeather = {

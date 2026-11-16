@@ -124,7 +124,13 @@ const toNumber = (value) => {
 let failed = false;
 const fetchedAt = new Date().toISOString();
 
-for (const type of Object.keys(slim)) {
+// `--only=mars` refreshes just the Curiosity weather and leaves the DONKI files alone
+// (useful when the DONKI rate limit is used up).
+const onlyArg = process.argv.find((arg) => arg.startsWith("--only="));
+const only = onlyArg ? onlyArg.split("=")[1] : null;
+const UV_LEVELS = new Set(["Low", "Moderate", "High", "Very_High"]);
+
+for (const type of only === "mars" ? [] : Object.keys(slim)) {
   try {
     const events = (await fetchDonki(type)).map(slim[type]);
     const file = await save(`donki-${type.toLowerCase()}.json`, {
@@ -153,9 +159,12 @@ try {
       minTempC: toNumber(sol.min_temp),
       maxTempC: toNumber(sol.max_temp),
       pressurePa: toNumber(sol.pressure),
+      // The rover's measured ultraviolet index: how much sunlight reached the ground.
+      uvIndex: UV_LEVELS.has(sol.local_uv_irradiance_index) ? sol.local_uv_irradiance_index : null,
+      // Solar longitude, 0 to 360: where Mars is in its year.
+      solarLongitude: toNumber(sol.ls),
       sunrise: sol.sunrise ?? null,
       sunset: sol.sunset ?? null,
-      sky: sol.atmo_opacity ?? null,
     }))
     .filter((sol) => sol.sol !== null)
     .sort((a, b) => a.sol - b.sol);

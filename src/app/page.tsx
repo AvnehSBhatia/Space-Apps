@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { DataCredits } from "@/components/data-credits";
 import { marsWeather, spaceWeather } from "@/lib/nasa/snapshot";
 
-// Placeholder home page. It proves the real NASA data is wired in; replace it with the game.
+// Placeholder home page. Part B replaces it with the real home screen.
 
 export default function Home() {
   const latestSol = marsWeather.sols.at(-1);
@@ -44,7 +45,7 @@ export default function Home() {
           </p>
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Project starter</h1>
           <p className="max-w-2xl text-white/70">
-            The project is not chosen yet. This page shows that real NASA data is loaded and ready to build on.
+            SolCast starter. Real NASA data is loaded and the whole game loop already runs in a plain test harness.
           </p>
         </header>
 
@@ -60,20 +61,21 @@ export default function Home() {
 
         <section className="flex flex-col gap-3 text-sm text-white/70">
           <h2 className="text-base font-medium text-white">Where to start</h2>
+          <Link
+            href="/play"
+            className="self-start rounded bg-emerald-500 px-4 py-3 text-base font-medium text-black"
+          >
+            Play the test harness
+          </Link>
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              Build the game in <code className="font-mono text-white">src/app/page.tsx</code>.
+              Read <code className="font-mono text-white">docs/SPEC.md</code>, then the brief for your part.
             </li>
             <li>
-              Real data comes from <code className="font-mono text-white">src/lib/nasa/snapshot.ts</code>; refresh it
-              with <code className="font-mono text-white">npm run data:fetch</code>.
+              The shared contract is <code className="font-mono text-white">src/contracts/index.ts</code>.
             </li>
             <li>
-              Seeded randomness for replayable missions is in{" "}
-              <code className="font-mono text-white">src/lib/rng.ts</code>.
-            </li>
-            <li>
-              The submission checklist and deadline are in <code className="font-mono text-white">SUBMISSION.md</code>.
+              Part B replaces this page with the real home screen.
             </li>
           </ul>
         </section>
