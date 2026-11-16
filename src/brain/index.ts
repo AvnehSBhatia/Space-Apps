@@ -1,7 +1,8 @@
-// Part A: the brain. The outpost computer's forecasting tools.
+// Part A: the brain. The outpost computer's forecasting engine.
 //
-// Owner: Part A. This file is a working reference so Parts B and C are never blocked.
-// Part A may rewrite anything in src/brain as long as `brain` keeps the BrainApi contract.
+// Owner: Part A. This file is the engine: it blends the tools, learns how much to trust each one,
+// and runs test flights. Each tool is its own file in ./tools. Nothing outside src/brain depends on
+// anything but the `brain` export and the BrainApi contract.
 // No React, no DOM, no network, no Math.random, no Date in here.
 
 import type {
@@ -14,272 +15,103 @@ import type {
   Target,
   TestFlight,
   ToolId,
-  ToolInfo,
   ToolInstance,
   TrainedBrain,
-  UvIndex,
 } from "../contracts";
 import { allReadings } from "../lib/nasa/readings";
+import { standardChecks } from "./bench";
+import { checker, recent, round, toSeries, type Series } from "./core";
+import { learnRange, readRange, type Range } from "./range";
+import { TOOLS, moduleOf } from "./tools";
+import { blend, learnTrust, type TrustRow } from "./trust";
 
-/** A Mars year is about 668 sols. */
-const MARS_YEAR_SOLS = 668;
+export { SUNLIGHT_LEVEL } from "./core";
+
 /** How many recent sols the brain learns from. */
-const TRAIN_WINDOW = 120;
-/** How far back a tool may look for its most recent readings. */
-const LOOK_BACK = 60;
+const TRAIN_WINDOW = 160;
+/** The newest part of that window is held back: tools do not learn from it, and trust is measured on it. */
+const TRUST_WINDOW = 40;
 /** A test flight needs at least this many earlier sols to learn from. */
 const MIN_TRAIN_SOLS = 30;
+/** During a test flight the brain re-learns this often, as it would on a real mission. */
+const RELEARN_EVERY = 10;
 
-/** The rover's ultraviolet index as a number, so tools can do arithmetic on it. */
-export const SUNLIGHT_LEVEL: Record<UvIndex, number> = { Low: 1, Moderate: 2, High: 3, Very_High: 4 };
-
-const CATALOG: ToolInfo[] = [
-  {
-    id: "copycat",
-    name: "Copycat",
-    realName: "persistence forecast",
-    blurb: "Guesses that tomorrow will be just like today.",
-    energyWhPerSol: 0,
-    knobs: [],
-    learns: false,
-    advanced: false,
-    ready: true,
-  },
-  {
-    id: "averager",
-    name: "Averager",
-    realName: "moving average",
-    blurb: "Averages the last few sols, so one odd day does not fool it.",
-    energyWhPerSol: 150,
-    knobs: [{ key: "sols", label: "Sols to average", min: 2, max: 14, step: 1, initial: 5 }],
-    learns: false,
-    advanced: false,
-    ready: true,
-  },
-  {
-    id: "season",
-    name: "Season Memory",
-    realName: "seasonal forecast",
-    blurb: "Looks up the same day one Mars year ago.",
-    energyWhPerSol: 250,
-    knobs: [],
-    learns: false,
-    advanced: false,
-    ready: true,
-  },
-  {
-    id: "trend",
-    name: "Trend Line",
-    realName: "linear trend",
-    blurb: "Draws a line through the last few sols and follows where it is heading.",
-    energyWhPerSol: 300,
-    knobs: [{ key: "sols", label: "Sols in the line", min: 3, max: 10, step: 1, initial: 5 }],
-    learns: false,
-    advanced: false,
-    ready: true,
-  },
-  // Advanced Lab. Part A builds these after the core game works. Until then they act as Copycat.
-  {
-    id: "neurons",
-    name: "Neuron Pack",
-    realName: "neural network",
-    blurb: "A small network of adjustable knobs that learns its own rule.",
-    energyWhPerSol: 900,
-    knobs: [{ key: "neurons", label: "Neurons", min: 2, max: 16, step: 1, initial: 4 }],
-    learns: true,
-    advanced: true,
-    ready: false,
-  },
-  {
-    id: "spotlight",
-    name: "Spotlight",
-    realName: "attention",
-    blurb: "Finds past days that looked like today and copies what came next.",
-    energyWhPerSol: 1100,
-    knobs: [{ key: "sols", label: "Sols to compare", min: 3, max: 10, step: 1, initial: 5 }],
-    learns: true,
-    advanced: true,
-    ready: false,
-  },
-  {
-    id: "longMemory",
-    name: "Long Memory",
-    realName: "state-space model",
-    blurb: "Keeps a running memory that fades slowly.",
-    energyWhPerSol: 700,
-    knobs: [],
-    learns: true,
-    advanced: true,
-    ready: false,
-  },
-];
-
-const INFO = new Map<ToolId, ToolInfo>(CATALOG.map((tool) => [tool.id, tool]));
 const DEFAULT_TOOL: ToolInstance = { uid: "default-copycat", id: "copycat", knobs: {} };
+const toolsOf = (design: BrainDesign): ToolInstance[] => (design.tools.length > 0 ? design.tools : [DEFAULT_TOOL]);
 
-type Point = { sol: number; value: number | null };
-type Series = { points: Point[]; bySol: Map<number, number | null> };
-type Internals = { q10: number; q90: number };
+type Learned = { trust: number[]; range: Range; params: unknown[] };
+/** What is stored in TrainedBrain.internals. */
+type Internals = { range: Range; params: unknown[] };
 
-function toSeries(history: SolReading[], target: Target): Series {
-  const points = history.map((reading) => ({
-    sol: reading.sol,
-    value:
-      target === "nightLowC" ? reading.minTempC : reading.uvIndex ? SUNLIGHT_LEVEL[reading.uvIndex] : null,
-  }));
-  return { points, bySol: new Map(points.map((point) => [point.sol, point.value])) };
+/** Saved numbers must survive a save file, so everything a tool learns goes through JSON. */
+function plain(value: unknown): unknown {
+  return value === undefined ? null : JSON.parse(JSON.stringify(value));
 }
 
-function toolsOf(design: BrainDesign): ToolInstance[] {
-  return design.tools.length > 0 ? design.tools : [DEFAULT_TOOL];
-}
-
-function knob(tool: ToolInstance, key: string): number {
-  const spec = INFO.get(tool.id)?.knobs.find((candidate) => candidate.key === key);
-  if (!spec) return 0;
-  const value = tool.knobs[key];
-  const chosen = typeof value === "number" && Number.isFinite(value) ? value : spec.initial;
-  return Math.round(Math.min(spec.max, Math.max(spec.min, chosen)));
-}
-
-/** The most recent `count` readings before position `end`, newest first. Skips missing readings. */
-function recent(points: Point[], end: number, count: number): number[] {
-  const values: number[] = [];
-  for (let index = end - 1; index >= 0 && index >= end - LOOK_BACK && values.length < count; index -= 1) {
-    const value = points[index].value;
-    if (value !== null) values.push(value);
-  }
-  return values;
-}
-
-const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
-
-/** One tool's guess for the sol `targetSol`, using only positions before `end`. null when it has nothing to go on. */
-function guessAt(tool: ToolInstance, series: Series, end: number, targetSol: number): number | null {
-  const { points, bySol } = series;
-  const last = recent(points, end, 1)[0];
-  if (last === undefined) return null;
-
-  switch (tool.id) {
-    case "averager": {
-      return mean(recent(points, end, knob(tool, "sols")));
-    }
-    case "season": {
-      for (const offset of [0, 1, -1, 2, -2]) {
-        const value = bySol.get(targetSol - MARS_YEAR_SOLS + offset);
-        if (value !== null && value !== undefined) return value;
-      }
-      return last;
-    }
-    case "trend": {
-      const values = recent(points, end, knob(tool, "sols")).reverse();
-      if (values.length < 3) return last;
-      const count = values.length;
-      const meanX = (count - 1) / 2;
-      const meanY = mean(values);
-      let top = 0;
-      let bottom = 0;
-      values.forEach((value, x) => {
-        top += (x - meanX) * (value - meanY);
-        bottom += (x - meanX) ** 2;
-      });
-      const slope = bottom === 0 ? 0 : top / bottom;
-      const guess = meanY + slope * (count - meanX);
-      // Never run further past the recent readings than they are spread out.
-      const low = Math.min(...values);
-      const high = Math.max(...values);
-      const spread = high - low;
-      return Math.min(high + spread, Math.max(low - spread, guess));
-    }
-    // copycat, and every tool Part A has not built yet
-    default:
-      return last;
-  }
-}
-
-function blend(guesses: (number | null)[], trust: number[]): number | null {
-  let total = 0;
-  let weight = 0;
-  guesses.forEach((guess, index) => {
-    if (guess !== null) {
-      total += guess * trust[index];
-      weight += trust[index];
-    }
+function fitAll(tools: ToolInstance[], series: Series, from: number, end: number, seed: number): unknown[] {
+  return tools.map((tool) => {
+    const impl = moduleOf(tool.id);
+    return impl.fit ? plain(impl.fit({ series, from, end, tool, seed })) : null;
   });
-  return weight > 0 ? total / weight : null;
 }
 
-function quantile(sorted: number[], q: number): number {
-  const position = (sorted.length - 1) * q;
-  const lower = Math.floor(position);
-  const upper = Math.ceil(position);
-  return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower);
+function guessAll(
+  tools: ToolInstance[],
+  series: Series,
+  end: number,
+  targetSol: number,
+  params: unknown[],
+): (number | null)[] {
+  return tools.map((tool, index) => {
+    const guess = moduleOf(tool.id).guess({ series, end, targetSol, tool, params: params[index] ?? null });
+    return guess !== null && Number.isFinite(guess) ? guess : null;
+  });
 }
-
-const fallbackSpread = (target: Target) => (target === "nightLowC" ? 4 : 1);
-const fallbackValue = (target: Target) => (target === "nightLowC" ? -70 : 2);
 
 /**
- * Learn from positions before `end`: trust each tool by how close it has been lately,
- * and measure how wide the brain's misses are.
+ * Learn from positions before `end`.
+ * 1. Tools learn from the older part of the window.
+ * 2. Trust and the forecast range are measured on the newest part, which the tools have not seen.
+ * 3. Tools then learn again from the whole window, ready to forecast position `end`.
  */
-function fit(tools: ToolInstance[], series: Series, end: number, target: Target): { trust: number[] } & Internals {
-  const { points } = series;
-  const squared = tools.map(() => 0);
-  const counts = tools.map(() => 0);
-  const rows: { actual: number; guesses: (number | null)[] }[] = [];
+function learn(tools: ToolInstance[], series: Series, end: number, seed: number): Learned {
+  const { points, target } = series;
+  const from = Math.max(0, end - TRAIN_WINDOW);
+  const span = end - from;
+  const split = span >= TRUST_WINDOW * 2 ? end - TRUST_WINDOW : from + Math.floor(span / 2);
 
-  for (let position = Math.max(1, end - TRAIN_WINDOW); position < end; position += 1) {
+  const early = fitAll(tools, series, from, split, seed);
+  const rows: TrustRow[] = [];
+  for (let position = Math.max(1, split); position < end; position += 1) {
     const actual = points[position].value;
     if (actual === null) continue;
-    const guesses = tools.map((tool) => guessAt(tool, series, position, points[position].sol));
-    rows.push({ actual, guesses });
-    guesses.forEach((guess, index) => {
-      if (guess !== null) {
-        squared[index] += (guess - actual) ** 2;
-        counts[index] += 1;
-      }
-    });
+    rows.push({ actual, guesses: guessAll(tools, series, position, points[position].sol, early) });
   }
 
-  const raw = tools.map((_, index) => (counts[index] > 0 ? 1 / (squared[index] / counts[index] + 0.05) : 0));
-  const rawTotal = raw.reduce((sum, value) => sum + value, 0);
-  const trust = rawTotal > 0 ? raw.map((value) => value / rawTotal) : tools.map(() => 1 / tools.length);
-
-  const residuals: number[] = [];
+  const trust = learnTrust(rows, tools.length);
+  const misses: number[] = [];
   for (const row of rows) {
     const guess = blend(row.guesses, trust);
-    if (guess !== null) residuals.push(row.actual - guess);
+    if (guess !== null) misses.push(row.actual - guess);
   }
-  residuals.sort((a, b) => a - b);
-  const spread = fallbackSpread(target);
-  const q10 = residuals.length >= 10 ? quantile(residuals, 0.1) : -spread;
-  const q90 = residuals.length >= 10 ? quantile(residuals, 0.9) : spread;
-  return { trust, q10: Math.min(q10, 0), q90: Math.max(q90, 0) };
+  return { trust, range: learnRange(misses, target), params: fitAll(tools, series, from, end, seed) };
 }
 
-function nextSol(points: Point[]): number {
-  return points.length > 0 ? points[points.length - 1].sol + 1 : 0;
-}
-
-function round(value: number, places: number): number {
-  const factor = 10 ** places;
-  return Math.round(value * factor) / factor;
-}
+const fallbackValue = (target: Target) => (target === "nightLowC" ? -70 : 2);
+const nextSol = (series: Series) => (series.points.length > 0 ? series.points[series.points.length - 1].sol + 1 : 0);
 
 function energy(design: BrainDesign): number {
-  return design.tools.reduce((sum, tool) => sum + (INFO.get(tool.id)?.energyWhPerSol ?? 0), 0);
+  return design.tools.reduce((sum, tool) => sum + moduleOf(tool.id).info.energyWhPerSol, 0);
 }
 
 function train(design: BrainDesign, history: SolReading[], target: Target, seed: number): TrainedBrain {
-  void seed; // reserved for tools that need random numbers (see createRng in src/lib/rng.ts)
   const series = toSeries(history, target);
-  const fitted = fit(toolsOf(design), series, series.points.length, target);
-  const internals: Internals = { q10: fitted.q10, q90: fitted.q90 };
+  const learned = learn(toolsOf(design), series, series.points.length, seed);
+  const internals: Internals = { range: learned.range, params: learned.params };
   return {
     design,
     target,
-    trust: design.tools.length > 0 ? fitted.trust : [],
+    trust: design.tools.length > 0 ? learned.trust : [],
     energyWhPerSol: energy(design),
     trainedThroughSol: series.points.length > 0 ? series.points[series.points.length - 1].sol : 0,
     internals,
@@ -291,41 +123,37 @@ function predict(trained: TrainedBrain, history: SolReading[]): Forecast {
   const series = toSeries(history, target);
   const tools = toolsOf(trained.design);
   const trust = trained.trust.length === tools.length ? trained.trust : tools.map(() => 1 / tools.length);
-  const end = series.points.length;
-  const guesses = tools.map((tool) => guessAt(tool, series, end, nextSol(series.points)));
-  const value = blend(guesses, trust) ?? fallbackValue(target);
-
   const stored = trained.internals as Partial<Internals> | null;
-  const spread = fallbackSpread(target);
-  const q10 = typeof stored?.q10 === "number" && Number.isFinite(stored.q10) ? stored.q10 : -spread;
-  const q90 = typeof stored?.q90 === "number" && Number.isFinite(stored.q90) ? stored.q90 : spread;
+  const params = Array.isArray(stored?.params) ? stored.params : [];
+  const range = readRange(stored?.range, target);
 
+  const guesses = guessAll(tools, series, series.points.length, nextSol(series), params);
+  const value = blend(guesses, trust) ?? fallbackValue(target);
   const clamp = (number: number) => (target === "sunlight" ? Math.min(4, Math.max(1, number)) : number);
   const places = target === "sunlight" ? 2 : 1;
   return {
     target,
     value: round(clamp(value), places),
-    low: round(clamp(value + q10), places),
-    high: round(clamp(value + q90), places),
+    low: round(clamp(value + range.low), places),
+    high: round(clamp(value + range.high), places),
   };
 }
 
 type Flight = { misses: number[]; copycatMisses: number[]; points: GuessPoint[] };
 
-function fly(tools: ToolInstance[], series: Series, target: Target, testSols: number): Flight {
+/** Walk forward over the last `testSols` positions, always learning only from earlier ones. */
+function fly(tools: ToolInstance[], series: Series, testSols: number, seed: number): Flight {
   const { points } = series;
   const flight: Flight = { misses: [], copycatMisses: [], points: [] };
   const from = Math.max(MIN_TRAIN_SOLS, points.length - Math.max(1, Math.floor(testSols)));
+  let learned: Learned | null = null;
 
   for (let position = from; position < points.length; position += 1) {
+    if (!learned || (position - from) % RELEARN_EVERY === 0) learned = learn(tools, series, position, seed);
     const actual = points[position].value;
     const sol = points[position].sol;
-    const { trust } = fit(tools, series, position, target);
-    const guess = blend(
-      tools.map((tool) => guessAt(tool, series, position, sol)),
-      trust,
-    );
-    flight.points.push({ sol, actual, guess });
+    const guess = blend(guessAll(tools, series, position, sol, learned.params), learned.trust);
+    flight.points.push({ sol, actual, guess: guess === null ? null : round(guess, 3) });
     if (actual === null || guess === null) continue;
     flight.misses.push(Math.abs(guess - actual));
     const copycat = recent(points, position, 1)[0];
@@ -334,7 +162,7 @@ function fly(tools: ToolInstance[], series: Series, target: Target, testSols: nu
   return flight;
 }
 
-const average = (values: number[]) => (values.length > 0 ? mean(values) : 0);
+const average = (values: number[]) => (values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
 
 function testFlight(
   design: BrainDesign,
@@ -343,17 +171,15 @@ function testFlight(
   testSols: number,
   seed: number,
 ): TestFlight {
-  void seed; // reserved for tools that need random numbers
   const series = toSeries(history, target);
-  const tools = toolsOf(design);
-  const flight = fly(tools, series, target, testSols);
+  const flight = fly(toolsOf(design), series, testSols, seed);
   const averageMiss = average(flight.misses);
   const count = flight.misses.length;
   const variance = count > 1 ? flight.misses.reduce((sum, miss) => sum + (miss - averageMiss) ** 2, 0) / (count - 1) : 0;
 
   const toolHelp = design.tools.map((tool) => {
     const others = design.tools.filter((other) => other.uid !== tool.uid);
-    const without = average(fly(others.length > 0 ? others : [DEFAULT_TOOL], series, target, testSols).misses);
+    const without = average(fly(others.length > 0 ? others : [DEFAULT_TOOL], series, testSols, seed).misses);
     return { uid: tool.uid, help: round(without - averageMiss, 3) };
   });
 
@@ -373,37 +199,28 @@ function preview(tool: ToolInstance, history: SolReading[], target: Target, last
   const series = toSeries(history, target);
   const { points } = series;
   const from = Math.max(1, points.length - Math.max(1, Math.floor(lastSols)));
+  // A learning tool learns once, from the sols before the previewed stretch.
+  const params = fitAll([tool], series, Math.max(0, from - TRAIN_WINDOW), from, 1);
   const result: GuessPoint[] = [];
   for (let position = from; position < points.length; position += 1) {
-    result.push({
-      sol: points[position].sol,
-      actual: points[position].value,
-      guess: guessAt(tool, series, position, points[position].sol),
-    });
+    const guess = guessAll([tool], series, position, points[position].sol, params)[0];
+    result.push({ sol: points[position].sol, actual: points[position].value, guess: guess === null ? null : round(guess, 3) });
   }
   return result;
 }
 
 function selfCheck(): CheckResult[] {
-  const results: CheckResult[] = [];
-  const check = (name: string, run: () => string | true) => {
-    try {
-      const outcome = run();
-      results.push({ name, pass: outcome === true, detail: outcome === true ? "ok" : outcome });
-    } catch (error) {
-      results.push({ name, pass: false, detail: error instanceof Error ? error.message : "threw" });
-    }
-  };
-
+  const { results, check } = checker();
   const history = allReadings().filter((reading) => reading.sol < 2100);
-  const all: BrainDesign = {
-    tools: (["copycat", "averager", "season", "trend"] as ToolId[]).map((id) => ({ uid: id, id, knobs: {} })),
+  const ready = TOOLS.filter((tool) => tool.info.ready);
+  const everyReadyTool: BrainDesign = {
+    tools: ready.map((tool) => ({ uid: tool.info.id, id: tool.info.id, knobs: {} })),
   };
   const targets: Target[] = ["nightLowC", "sunlight"];
 
   check("the four core tools are ready", () => {
-    const ready = CATALOG.filter((tool) => tool.ready && !tool.advanced).map((tool) => tool.id);
-    return ready.length === 4 ? true : `ready core tools: ${ready.join(", ")}`;
+    const core = ready.filter((tool) => !tool.info.advanced).map((tool) => tool.info.id);
+    return core.length === 4 ? true : `ready core tools: ${core.join(", ")}`;
   });
 
   check("an empty design acts as Copycat", () => {
@@ -414,7 +231,7 @@ function selfCheck(): CheckResult[] {
 
   check("forecasts are real numbers, low <= value <= high", () => {
     for (const target of targets) {
-      const forecast = predict(train(all, history, target, 1), history);
+      const forecast = predict(train(everyReadyTool, history, target, 1), history);
       const numbers = [forecast.value, forecast.low, forecast.high];
       if (!numbers.every(Number.isFinite)) return `${target}: ${numbers.join(", ")}`;
       if (forecast.low > forecast.value || forecast.value > forecast.high) return `${target}: range out of order`;
@@ -422,36 +239,64 @@ function selfCheck(): CheckResult[] {
     return true;
   });
 
-  check("trust adds up to 1", () => {
-    const total = train(all, history, "nightLowC", 1).trust.reduce((sum, value) => sum + value, 0);
-    return Math.abs(total - 1) < 1e-9 ? true : `sum ${total}`;
+  check("trust is never negative and adds up to 1", () => {
+    const trust = train(everyReadyTool, history, "nightLowC", 1).trust;
+    const total = trust.reduce((sum, value) => sum + value, 0);
+    return trust.every((value) => value >= 0) && Math.abs(total - 1) < 1e-9 ? true : `trust ${trust.join(", ")}`;
   });
 
   check("same input, same output", () => {
-    const first = JSON.stringify(testFlight(all, history, "nightLowC", 30, 7));
-    const second = JSON.stringify(testFlight(all, history, "nightLowC", 30, 7));
+    const first = JSON.stringify(testFlight(everyReadyTool, history, "nightLowC", 30, 7));
+    const second = JSON.stringify(testFlight(everyReadyTool, history, "nightLowC", 30, 7));
     return first === second ? true : "two runs differ";
   });
 
   check("a trained brain survives a save and load", () => {
-    const trained = train(all, history, "nightLowC", 1);
+    const trained = train(everyReadyTool, history, "nightLowC", 1);
     const loaded = JSON.parse(JSON.stringify(trained)) as TrainedBrain;
     return predict(loaded, history).value === predict(trained, history).value ? true : "forecast changed after JSON";
   });
 
-  check("a test flight on 1,000 sols takes under 150 ms", () => {
+  check("a test flight never looks at the sol it is guessing", () => {
+    const changed = history.map((reading, index) =>
+      index >= history.length - 30 && reading.minTempC !== null ? { ...reading, minTempC: reading.minTempC + 25 } : reading,
+    );
+    const first = testFlight(everyReadyTool, history, "nightLowC", 30, 1).points[0].guess;
+    const second = testFlight(everyReadyTool, changed, "nightLowC", 30, 1).points[0].guess;
+    return first === second ? true : `guess moved from ${first} to ${second} when only later sols changed`;
+  });
+
+  check("a short or empty history does not break anything", () => {
+    for (const short of [[], history.slice(0, 1), history.slice(0, 12)]) {
+      const forecast = predict(train(everyReadyTool, short, "nightLowC", 1), short);
+      if (!Number.isFinite(forecast.value)) return `history of ${short.length}: ${forecast.value}`;
+      testFlight(everyReadyTool, short, "nightLowC", 30, 1);
+    }
+    return true;
+  });
+
+  check("a test flight on 1,000 sols with every ready tool takes under 150 ms", () => {
     const thousand = history.slice(-1000);
+    testFlight(everyReadyTool, thousand, "nightLowC", 30, 1);
     const started = performance.now();
-    testFlight(all, thousand, "nightLowC", 30, 1);
+    testFlight(everyReadyTool, thousand, "nightLowC", 30, 1);
     const elapsed = performance.now() - started;
     return elapsed < 150 ? true : `${elapsed.toFixed(0)} ms`;
   });
 
+  for (const tool of ready) {
+    for (const result of [...standardChecks(tool), ...(tool.checks?.() ?? [])]) {
+      results.push({ ...result, name: `${tool.info.name}: ${result.name}` });
+    }
+  }
   return results;
 }
 
+/** Tool ids the engine knows, in catalog order. */
+export const TOOL_IDS: ToolId[] = TOOLS.map((tool) => tool.info.id);
+
 export const brain: BrainApi = {
-  catalog: () => CATALOG.map((tool) => ({ ...tool, knobs: tool.knobs.map((spec) => ({ ...spec })) })),
+  catalog: () => TOOLS.map((tool) => ({ ...tool.info, knobs: tool.info.knobs.map((spec) => ({ ...spec })) })),
   energy,
   train,
   predict,

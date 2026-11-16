@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "data:fetch": "node scripts/fetch-nasa-data.mjs"
+    "data:fetch": "node scripts/fetch-nasa-data.mjs",
+    "check": "node scripts/check.mjs"
   },
   "dependencies": {
     "next": "16.4.6",
