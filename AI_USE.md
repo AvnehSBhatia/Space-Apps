@@ -17,6 +17,7 @@ Add a row every time an AI tool produces something that ends up in the project. 
 | 2026-11-15 | Claude Code (Anthropic) with Sonnet, Opus and Fable subagents | The Part A brain (tool files, trust, range, engine checks) and the rewritten `docs/PART-A-BRAIN.md` | `src/brain`, on the `brain` branch |
 | 2026-11-15 | Claude Code (Anthropic) | The game UI (Part B): screens, components, styles and icons | `src/app`, `src/components`; `Co-Authored-By` trailer |
 | 2026-11-15 | OpenAI image generation via Codex CLI, directed by Claude Code | Design mockups used only as layout references. No AI image ships in the game: every illustration is hand-built SVG in `src/components/mars-scene.tsx` | Not in the repo |
+| 2026-11-15 | Claude Code (Anthropic) subagents, following the UltraUI skill library | The one-screen-per-sol Today panel with the coloured slider and Ask Mission Control; the 3D outpost scene on the game screen; the 3D Mars globe on the home page. All drawn in code: no AI-generated image, video or audio files | `src/components/panels.tsx`, `mission-app.tsx`, `outpost-3d.tsx`, `game-stage.tsx`, `mars-globe-3d.tsx`, `home-hero.tsx` |
 
 ## How we mark it
 

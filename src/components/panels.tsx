@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, type Dispatch, type ReactNode } from "react";
-import type { Action, ForecastPair, GameState, WhatIf } from "@/contracts";
+import type { Action, GameState, WhatIf } from "@/contracts";
 import { carefulBet, game } from "@/game";
 import { SUNLIGHT_LEVEL_WORD, SUNLIGHT_WORD, kWh, niceDate } from "./format";
-import { Icon } from "./icons";
+import { Icon, type IconName } from "./icons";
 import { Num } from "./rule-cards";
 import { Thermometer } from "./thermometer";
 
@@ -67,27 +67,6 @@ function Row({ label, children, tone }: { label: ReactNode; children: ReactNode;
   );
 }
 
-function ForecastBlock({ from, pair }: { from: string; pair: ForecastPair }) {
-  const night = pair.nightLow;
-  return (
-    <div className="rounded-[10px] border border-line bg-haze p-4">
-      <p className="flex items-center gap-2 text-[0.92rem] text-ink-2">
-        <Icon name={from === "Mission Control" ? "dish" : "cpu"} size={17} />
-        {from} forecast
-      </p>
-      <p className="readout mt-2 text-[1.6rem] leading-none text-ink">{Math.round(night.value)} C</p>
-      <p className="mt-1 text-[0.92rem] text-ink-2">
-        Tonight, between <span className="readout text-ink">{Math.round(night.high)}</span> and{" "}
-        <span className="readout text-ink">{Math.round(night.low)} C</span>
-      </p>
-      <p className="mt-2 border-t border-line pt-2 text-[0.92rem] text-ink-2">
-        Tomorrow&apos;s sunlight:{" "}
-        <span className="text-ink">{SUNLIGHT_LEVEL_WORD[Math.round(pair.sunlightTomorrow.value)] ?? "unknown"}</span>
-      </p>
-    </div>
-  );
-}
-
 type Zone = "good" | "tight" | "cold";
 const ZONE_COLOUR: Record<Zone, string> = { good: "var(--air)", tight: "var(--sun)", cold: "var(--danger)" };
 const ZONE_TEXT: Record<Zone, string> = { good: "text-air", tight: "text-sun", cold: "text-danger" };
@@ -121,7 +100,42 @@ function planSentence(state: GameState, preview: WhatIf, greenhouseWh: number): 
   return `Good plan. Warm tonight, ${air}, ${preview.spareNights} spare ${preview.spareNights === 1 ? "night" : "nights"}.`;
 }
 
-/** The whole day on one screen: today's sun, tonight's forecast, the plan, and one button. */
+function Tile({
+  icon,
+  tone,
+  label,
+  value,
+  note,
+}: {
+  icon: IconName;
+  tone: string;
+  label: ReactNode;
+  value: ReactNode;
+  note?: ReactNode;
+}) {
+  return (
+    <div className="rounded-[12px] border border-line bg-haze px-4 py-3">
+      <p className="flex items-center gap-2 text-[0.9rem] text-ink-2">
+        <Icon name={icon} size={17} className={tone} /> {label}
+      </p>
+      <p className="readout mt-1 text-[1.35rem] leading-tight text-ink">{value}</p>
+      {note ? <p className="mt-1 text-[0.88rem] leading-snug text-ink-2">{note}</p> : null}
+    </div>
+  );
+}
+
+function Result({ label, value, tone }: { label: ReactNode; value: ReactNode; tone: string }) {
+  return (
+    <div className="flex-1 rounded-[10px] bg-haze px-2 py-2.5 text-center">
+      <p className="text-[0.85rem] text-ink-2">{label}</p>
+      <p className="readout mt-0.5 text-[1.15rem]" style={{ color: tone }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/** The whole day on one screen, read top to bottom: what you have, your one choice, what it means, go. */
 export function BetPanel({ state, dispatch }: Props) {
   const coldest = coldestForecast(state);
   const max = state.maxGreenhouseWh;
@@ -129,6 +143,8 @@ export function BetPanel({ state, dispatch }: Props) {
   const value = huddle ? 0 : state.bet.greenhouseWh;
   const preview = game.whatIf(state, state.bet, coldest);
   const zone = zoneOf(preview);
+  // Huddle is a trade, not a free win, so it never shows as plain green.
+  const tone: Zone = huddle && zone === "good" ? "tight" : zone;
   const low = lastNightLow(state);
   const cropPct = Math.min(100, Math.round((preview.cropLightAfterWh / Math.max(1, state.outpost.cropNeedsWh)) * 100));
   const lock = () => dispatch({ type: "lockBet" });
@@ -148,59 +164,87 @@ export function BetPanel({ state, dispatch }: Props) {
 
   const blackout = state.contact === "blackout";
   const nudge = state.mode === "guided" && state.solIndex < 3 && !blackout;
+  const forecast = state.earthForecast ?? state.outpostForecast;
+  const forecastFrom = state.earthForecast ? "Mission Control" : "Your outpost computer";
+  const tomorrow = forecast ? SUNLIGHT_LEVEL_WORD[Math.round(forecast.sunlightTomorrow.value)] : null;
+  const airNow = Math.round(state.outpost.airPercent);
+  const airAfter = Math.round(preview.airAfter);
+  const airArrow = airAfter > airNow ? " ↑" : airAfter < airNow ? " ↓" : "";
+  const lastNight = low != null ? (
+    <>
+      {" "}
+      Last night: <Num rule="nightLow">{low} C</Num>.
+    </>
+  ) : null;
 
   return (
-    <section aria-labelledby="today-title" className="grid gap-8 lg:grid-cols-[1fr_1.3fr] lg:gap-10">
-      <div className="flex flex-col gap-4">
-        <h2 id="today-title" className="text-[1.9rem] sm:text-[2.2rem]">
-          Sunlight is <Num rule="sunlight">{SUNLIGHT_WORD[state.sunlight]}</Num> today.
-        </h2>
+    <section aria-labelledby="today-title" className="mx-auto flex max-w-[46rem] flex-col gap-5">
+      {/* 1. What you have today. */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Tile
+          icon="sun"
+          tone="text-sun"
+          label="Sun today"
+          value={<Num rule="sunlight">{SUNLIGHT_WORD[state.sunlight]}</Num>}
+          note={
+            <>
+              Panels collect <Num rule="solar">{kWh(state.solarWh)}</Num>.{tomorrow ? ` Tomorrow: ${tomorrow}.` : ""}
+            </>
+          }
+        />
+        <Tile
+          icon="battery"
+          tone="text-battery"
+          label="Battery now"
+          value={kWh(state.outpost.batteryWh)}
+          note={
+            state.computerWh > 0
+              ? `The outpost computer uses ${kWh(state.computerWh)} today.`
+              : "It has to last the whole night."
+          }
+        />
+        <Tile
+          icon={forecast ? "thermo" : "noSignal"}
+          tone="text-dusk"
+          label="Tonight"
+          value={forecast ? `about ${Math.round(forecast.nightLow.value)} C` : "No signal"}
+          note={
+            forecast ? (
+              <>
+                {forecastFrom} says {Math.round(forecast.nightLow.high)} to {Math.round(forecast.nightLow.low)} C.
+                {state.earthForecast && state.outpostForecast
+                  ? ` Your computer says ${Math.round(state.outpostForecast.nightLow.value)} C.`
+                  : ""}
+                {lastNight}
+              </>
+            ) : (
+              <>
+                The Sun is between Mars and Earth, so there is no forecast.
+                {state.availableTools.length > 0 ? " The Brain Bay can make one." : ""}
+                {lastNight}
+              </>
+            )
+          }
+        />
+      </div>
+
+      {/* 2. The one choice, and what it means. */}
+      <div className="flex flex-col gap-4 rounded-[14px] border border-line p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="today-title" className="text-[1.5rem] sm:text-[1.75rem]">
+            How much power for the greenhouse?
+          </h2>
+          <p className="readout text-[1.1rem]">
+            {kWh(value)} <span className="text-ink-2">of {kWh(max)}</span>
+          </p>
+        </div>
         {state.solIndex === 0 ? (
-          <p className="text-[1.05rem] text-ink-2">
+          <p className="-mt-2 text-[0.98rem] text-ink-2">
             A <Num rule="mars-day">sol</Num> is one day on Mars. Keep the crew safe for {state.mission.lengthSols} of them.
           </p>
         ) : null}
-        <div>
-          <Row label={<Num rule="solar">Panels collect today</Num>}>{kWh(state.solarWh)}</Row>
-          <Row label="Battery now">{kWh(state.outpost.batteryWh)}</Row>
-          {low != null ? <Row label={<Num rule="nightLow">Last night&apos;s real low</Num>}>{low} C</Row> : null}
-          {state.computerWh > 0 ? <Row label="Outpost computer uses">{kWh(state.computerWh)}</Row> : null}
-        </div>
-        {state.earthForecast ? (
-          <ForecastBlock from="Mission Control" pair={state.earthForecast} />
-        ) : (
-          <div className="rounded-[10px] border border-dashed border-[#4a4d53] p-4">
-            <p className="flex items-center gap-2 font-medium text-ink">
-              <Icon name="noSignal" size={18} className="text-dusk" /> No signal from Earth
-            </p>
-            <p className="mt-1.5 text-[0.95rem] text-ink-2">
-              The Sun is between Mars and Earth, so Mission Control can&apos;t send a forecast.
-              {!state.outpostForecast && state.availableTools.length > 0 ? " Install a tool in the Brain Bay to make your own." : ""}
-            </p>
-          </div>
-        )}
-        {state.outpostForecast ? <ForecastBlock from="Outpost computer" pair={state.outpostForecast} /> : null}
-      </div>
 
-      <div className="flex flex-col gap-5 lg:border-l lg:border-line lg:pl-10">
-        <p
-          role="status"
-          aria-live="polite"
-          className={`flex min-h-[4.25rem] items-center gap-3 rounded-[12px] px-4 py-3 text-[1.2rem] font-medium leading-snug ${ZONE_SOFT[zone]} ${ZONE_TEXT[zone]}`}
-        >
-          <Icon name={huddle ? "huddle" : zone === "good" ? "check" : "alert"} size={24} className="flex-none" />
-          {planSentence(state, preview, value)}
-        </p>
-
-        <label className="flex flex-col gap-3">
-          <span className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="flex items-center gap-2 text-[1.05rem]">
-              <Icon name="sprout" size={19} className="text-food" /> Power for the greenhouse lights
-            </span>
-            <span className="readout text-[1.05rem]">
-              {kWh(value)} <span className="text-ink-2">/ {kWh(max)}</span>
-            </span>
-          </span>
+        <div className="flex flex-col gap-2">
           <input
             type="range"
             className="slider"
@@ -209,16 +253,16 @@ export function BetPanel({ state, dispatch }: Props) {
             step={500}
             value={value}
             disabled={huddle || max <= 0}
-            style={{ background: track, height: 14 }}
+            style={{ background: huddle ? "#3a3d42" : track, height: 14 }}
+            aria-label="Power for the greenhouse lights"
             aria-valuetext={`${kWh(value)} for the greenhouse. ${planSentence(state, preview, value)}`}
             onChange={(event) => dispatch({ type: "setBet", bet: { ...state.bet, greenhouseWh: Number(event.target.value) } })}
             onKeyDown={(event) => {
               if (event.key === "Enter") lock();
             }}
-            autoFocus
           />
-          <span className="relative h-9 text-[0.85rem] text-ink-2" aria-hidden={airIndex <= 0}>
-            {airIndex > 0 ? (
+          {airIndex > 0 ? (
+            <div className="relative h-8 text-[0.85rem]" aria-hidden>
               <span
                 className="absolute top-0 flex -translate-x-1/2 flex-col items-center whitespace-nowrap"
                 style={{ left: `calc(15px + (100% - 30px) * ${airIndex / (SAMPLES - 1)})` }}
@@ -226,68 +270,78 @@ export function BetPanel({ state, dispatch }: Props) {
                 <span className="h-2.5 w-0.5 rounded bg-air" />
                 <span className="text-air">air holds from here</span>
               </span>
-            ) : null}
-          </span>
-          <span className="flex justify-between text-[0.98rem] font-medium text-ink">
+            </div>
+          ) : null}
+          <div className="flex justify-between text-[0.98rem] font-medium text-ink">
             <span className="flex items-center gap-1.5">
               <Icon name="moon" size={17} className="text-battery" /> Save for tonight
             </span>
             <span className="flex items-center gap-1.5">
               Grow air and food <Icon name="sprout" size={17} className="text-food" />
             </span>
-          </span>
-        </label>
-
-        <div className="flex items-center gap-4 rounded-[10px] border border-line px-4 py-3">
-          <Icon name="huddle" size={22} className="flex-none text-ink-2" />
-          <div className="flex-1">
-            <p className="text-[1.05rem]">
-              <Num rule="huddle">Huddle</Num> in one room
-            </p>
-            <p className="text-[0.92rem] text-ink-2">Uses far less power tonight. The greenhouse stays off.</p>
           </div>
+          {!huddle ? (
+            <p className="text-[0.85rem] text-ink-2">
+              <span className="text-air">Green</span> is safe. <span className="text-sun">Yellow</span> leaves nothing spare.{" "}
+              <span className="text-danger">Red</span> runs out before sunrise.
+            </p>
+          ) : null}
+        </div>
+
+        <p
+          role="status"
+          aria-live="polite"
+          className={`flex min-h-[3.5rem] items-center gap-3 rounded-[12px] px-4 py-3 text-[1.15rem] font-medium leading-snug ${ZONE_SOFT[tone]} ${ZONE_TEXT[tone]}`}
+        >
+          <Icon name={huddle ? "huddle" : zone === "good" ? "check" : "alert"} size={22} className="flex-none" />
+          {planSentence(state, preview, value)}
+        </p>
+
+        <div className="flex gap-2">
+          <Result label={<Num rule="keepAlive">Battery tonight</Num>} value={kWh(preview.batteryAtSunsetWh)} tone="var(--battery)" />
+          <Result label={<Num rule="air">Air tomorrow</Num>} value={`${airAfter}%${airArrow}`} tone="var(--air)" />
+          <Result label={<Num rule="crop">Crop</Num>} value={`${cropPct}%`} tone="var(--food)" />
+        </div>
+      </div>
+
+      {/* 3. The emergency switch. */}
+      <div className="flex items-center gap-4 rounded-[12px] border border-line px-4 py-3">
+        <Icon name="huddle" size={22} className="flex-none text-ink-2" />
+        <div className="flex-1">
+          <p className="text-[1.02rem]">
+            Emergency: <Num rule="huddle">huddle</Num> in one room
+          </p>
+          <p className="text-[0.9rem] text-ink-2">Much less power tonight. No greenhouse today.</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={huddle}
+          aria-label="Huddle in one room"
+          onClick={() => dispatch({ type: "setBet", bet: { ...state.bet, huddle: !huddle } })}
+          className="switch cursor-pointer"
+          data-on={huddle}
+        />
+      </div>
+
+      {state.problem ? <p className="rounded-[10px] bg-sun-soft px-3 py-2 text-[0.95rem]">{state.problem}</p> : null}
+
+      {/* 4. Go. */}
+      <div className="flex flex-col gap-2">
+        {nudge ? <p className="text-[0.95rem] text-sun">Not sure? Mission Control can pick a safe plan.</p> : null}
+        <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
           <button
             type="button"
-            role="switch"
-            aria-checked={huddle}
-            aria-label="Huddle in one room"
-            onClick={() => dispatch({ type: "setBet", bet: { ...state.bet, huddle: !huddle } })}
-            className="switch cursor-pointer"
-            data-on={huddle}
-          />
-        </div>
-
-        <div>
-          <p className="mb-1 text-[13px] font-medium text-ink-2">If you lock this in</p>
-          <Row label={<Num rule="keepAlive">Battery at sunset</Num>} tone="var(--battery)">
-            {kWh(preview.batteryAtSunsetWh)}
-          </Row>
-          <Row label={<Num rule="air">Air tomorrow</Num>} tone="var(--air)">
-            {Math.round(preview.airAfter)}%
-          </Row>
-          <Row label={<Num rule="crop">Crop grown</Num>} tone="var(--food)">
-            {cropPct}%
-          </Row>
-        </div>
-
-        {state.problem ? <p className="rounded-[10px] bg-sun-soft px-3 py-2 text-[0.95rem]">{state.problem}</p> : null}
-
-        <div className="mt-auto flex flex-col gap-3">
-          {nudge ? <p className="text-[0.95rem] text-sun">Not sure? Mission Control can pick a safe plan.</p> : null}
-          <div className="grid gap-3 sm:grid-cols-[1fr_1.4fr]">
-            <button
-              type="button"
-              className={`btn btn-quiet w-full ${nudge ? "border-sun text-sun" : ""}`}
-              disabled={blackout}
-              onClick={() => dispatch({ type: "setBet", bet: carefulBet(state) })}
-            >
-              <Icon name={blackout ? "noSignal" : "dish"} size={19} />
-              {blackout ? "No signal from Earth" : "Ask Mission Control"}
-            </button>
-            <button type="button" className="btn btn-primary min-h-[60px] w-full text-xl font-semibold" onClick={lock}>
-              Lock it in
-            </button>
-          </div>
+            className={`btn btn-quiet w-full whitespace-nowrap ${nudge ? "border-sun text-sun" : ""}`}
+            disabled={blackout}
+            onClick={() => dispatch({ type: "setBet", bet: carefulBet(state) })}
+          >
+            <Icon name={blackout ? "noSignal" : "dish"} size={19} />
+            {blackout ? "No signal from Earth" : "Ask Mission Control"}
+          </button>
+          <button type="button" className="btn btn-primary min-h-[60px] w-full text-xl font-semibold" onClick={lock}>
+            Lock it in
+          </button>
         </div>
       </div>
     </section>

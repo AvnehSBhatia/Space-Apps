@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { Component, useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { GameState, Outpost, UvIndex } from "@/contracts";
 import { RULES } from "@/game/rules";
 import { Confetti, CrewStatus, moodOf } from "./crew";
@@ -7,6 +9,48 @@ import { SUNLIGHT_WORD, kWh, niceDate } from "./format";
 import { Icon, type IconName } from "./icons";
 import { MarsScene } from "./mars-scene";
 import { Num } from "./rule-cards";
+
+// The 3D outpost is loaded only in the browser, and only when it can be shown.
+const Outpost3D = dynamic(() => import("./outpost-3d").then((m) => m.Outpost3D), { ssr: false, loading: () => null });
+
+let webglSupport: boolean | null = null;
+function hasWebGL() {
+  if (webglSupport === null) {
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+      webglSupport = !!gl;
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      webglSupport = false;
+    }
+  }
+  return webglSupport;
+}
+
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+function subscribeMotion(onChange: () => void) {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+/** True when the browser can draw the 3D scene and the player has not asked for less motion. */
+const canShow3D = () => !window.matchMedia(REDUCED_MOTION).matches && hasWebGL();
+const canShow3DOnServer = () => false;
+
+/** If the 3D scene fails to load or crashes, show nothing here: the flat scene stays underneath. */
+class SceneBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 const CELLS = 12;
 const LIGHT_LEVEL: Record<UvIndex, number> = { Low: 1, Moderate: 2, High: 3, Very_High: 4 };
@@ -136,15 +180,40 @@ export function GameStage({ state }: { state: GameState }) {
   const lost = state.ending === "crewLost";
   const mood = moodOf(state);
   const sol = String(state.solIndex + 1).padStart(2, "0");
+  const title = night ? "The outpost at night in Gale Crater" : `The outpost in Gale Crater, sunlight ${SUNLIGHT_WORD[state.sunlight]}`;
+
+  // The flat scene shows first and stays as the fallback: no WebGL, reduced motion, or a 3D failure.
+  const supported = useSyncExternalStore(subscribeMotion, canShow3D, canShow3DOnServer);
+  const [ready, setReady] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const show3D = supported && !failed;
+  const onReady = useCallback(() => setReady(true), []);
+  const onFail = useCallback(() => setFailed(true), []);
+  useEffect(() => {
+    if (!ready) return;
+    const id = window.setTimeout(() => setSettled(true), 900);
+    return () => window.clearTimeout(id);
+  }, [ready]);
 
   return (
     <div className="relative overflow-hidden rounded-t-[16px] border border-b-0 border-line bg-deep">
       <div className="relative h-[280px] sm:h-[340px] lg:h-[clamp(340px,46vh,460px)]">
-        <MarsScene
-          weather={night ? "night" : state.sunlight}
-          className="absolute inset-0 h-full w-full"
-          title={night ? "The outpost at night in Gale Crater" : `The outpost in Gale Crater, sunlight ${SUNLIGHT_WORD[state.sunlight]}`}
-        />
+        {show3D && settled ? (
+          <span className="sr-only">{title}</span>
+        ) : (
+          <MarsScene weather={night ? "night" : state.sunlight} className="absolute inset-0 h-full w-full" title={title} />
+        )}
+        {show3D ? (
+          <SceneBoundary onError={onFail}>
+            <Outpost3D
+              state={state}
+              className={`absolute inset-0 h-full w-full transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`}
+              onReady={onReady}
+              onLost={onFail}
+            />
+          </SceneBoundary>
+        ) : null}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/45 to-transparent" aria-hidden />
 
         <div className="absolute left-3 top-3 sm:left-5 sm:top-5">
