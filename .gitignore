@@ -45,3 +45,6 @@ next-env.d.ts
 
 # local agent settings
 .claude/
+
+# npm run check output
+.check/
