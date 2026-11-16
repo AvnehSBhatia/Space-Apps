@@ -40,27 +40,27 @@ export default function Home() {
     <>
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-6 py-16">
         <header className="flex flex-col gap-3">
-          <p className="font-mono text-xs uppercase tracking-widest text-white/50">
+          <p className="font-mono text-xs uppercase tracking-widest text-black/60">
             2026 NASA Space Apps Challenge · Junior Astronaut Mission Trainer
           </p>
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Project starter</h1>
-          <p className="max-w-2xl text-white/70">
+          <p className="max-w-2xl text-black/70">
             SolCast starter. Real NASA data is loaded and the whole game loop already runs in a plain test harness.
           </p>
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2">
           {stats.map((stat) => (
-            <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-5">
+            <div key={stat.label} className="rounded-lg border border-black/10 bg-black/5 p-5">
               <p className="font-mono text-4xl tabular-nums">{stat.value.toLocaleString("en-US")}</p>
               <p className="mt-1 font-medium">{stat.label}</p>
-              <p className="mt-2 text-sm text-white/60">{stat.detail}</p>
+              <p className="mt-2 text-sm text-black/60">{stat.detail}</p>
             </div>
           ))}
         </section>
 
-        <section className="flex flex-col gap-3 text-sm text-white/70">
-          <h2 className="text-base font-medium text-white">Where to start</h2>
+        <section className="flex flex-col gap-3 text-sm text-black/70">
+          <h2 className="text-base font-medium text-black">Where to start</h2>
           <Link
             href="/play"
             className="self-start rounded bg-emerald-500 px-4 py-3 text-base font-medium text-black"
@@ -69,10 +69,10 @@ export default function Home() {
           </Link>
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              Read <code className="font-mono text-white">docs/SPEC.md</code>, then the brief for your part.
+              Read <code className="font-mono text-black">docs/SPEC.md</code>, then the brief for your part.
             </li>
             <li>
-              The shared contract is <code className="font-mono text-white">src/contracts/index.ts</code>.
+              The shared contract is <code className="font-mono text-black">src/contracts/index.ts</code>.
             </li>
             <li>
               Part B replaces this page with the real home screen.

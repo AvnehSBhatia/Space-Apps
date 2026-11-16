@@ -8,7 +8,7 @@ const day = (iso: string) => iso.slice(0, 10);
  */
 export function DataCredits() {
   return (
-    <footer className="border-t border-white/10 px-6 py-6 text-xs leading-relaxed text-white/60">
+    <footer className="border-t border-black/10 px-6 py-6 text-xs leading-relaxed text-black/60">
       <p>
         Space weather: NASA DONKI, {spaceWeather.range.start} to {spaceWeather.range.end}. Mars weather:
         Curiosity rover REMS station, sols {marsWeather.range.firstSol} to {marsWeather.range.lastSol} (
