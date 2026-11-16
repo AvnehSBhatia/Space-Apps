@@ -1,4 +1,4 @@
-import { knobOf, mean, recent, type ToolModule } from "../core";
+import { knobOf, mean, recent, withinReach, type ToolModule } from "../core";
 
 export const trend: ToolModule = {
   info: {
@@ -26,10 +26,7 @@ export const trend: ToolModule = {
       bottom += (x - meanX) ** 2;
     });
     const slope = bottom === 0 ? 0 : top / bottom;
-    const guess = meanY + slope * (count - meanX);
-    // Never run further past the recent readings than they are spread out.
-    const low = Math.min(...values);
-    const high = Math.max(...values);
-    return Math.min(high + (high - low), Math.max(low - (high - low), guess));
+    // The line, followed one sol past the newest reading.
+    return withinReach(values, meanY + slope * (count - meanX));
   },
 };

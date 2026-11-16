@@ -4,10 +4,17 @@
 export type TrustRow = { actual: number; guesses: (number | null)[] };
 
 /**
+ * Added to every tool's mean squared miss, so a tool that has been exactly right
+ * neither divides by zero nor takes all the trust.
+ */
+const MISS_FLOOR = 0.05;
+
+/**
  * Weights for blending the tools, one per tool, each 0 or more, summing to 1.
  * The rows are sols the tools had not learned from, so a tool cannot earn trust by memorising.
  *
- * Reference rule: trust each tool in proportion to 1 / (its mean squared miss).
+ * Each tool is trusted in proportion to 1 / (its mean squared miss). Weights fitted by least squares were
+ * tried instead and made the core tools' night-low blend worse, so this simpler rule stayed.
  */
 export function learnTrust(rows: TrustRow[], toolCount: number): number[] {
   if (toolCount === 0) return [];
@@ -21,7 +28,7 @@ export function learnTrust(rows: TrustRow[], toolCount: number): number[] {
       }
     });
   }
-  const raw = squared.map((sum, index) => (counts[index] > 0 ? 1 / (sum / counts[index] + 0.05) : 0));
+  const raw = squared.map((sum, index) => (counts[index] > 0 ? 1 / (sum / counts[index] + MISS_FLOOR) : 0));
   const total = raw.reduce((sum, value) => sum + value, 0);
   return total > 0 ? raw.map((value) => value / total) : raw.map(() => 1 / toolCount);
 }

@@ -34,7 +34,7 @@ Each is a real stretch of the record. The start sol is picked from the seed, so 
 | Mission | Real event | What it teaches |
 |---|---|---|
 | A calm season (12 sols) | Early 2016, steady Moderate sunlight | The loop, and keeping a reserve |
-| Radio silence (30 sols) | Solar conjunction, August to September 2019. NASA stopped commanding its Mars missions for about two weeks. | Mission Control goes silent; the outpost computer is all you have |
+| Radio silence (30 sols) | Solar conjunction: NASA held off commanding its Mars missions from 28 August to 7 September 2019. | Mission Control goes silent; the outpost computer is all you have |
 | The great dust storm (34 sols) | The 2018 global dust storm | Sunlight collapses for weeks; reserve and Huddle decide who survives |
 
 Measured on the real record (see `src/data/`):
@@ -48,10 +48,9 @@ Measured on the real record (see `src/data/`):
 That is the honest lesson, and the game says it out loud: test a forecast before you trust it, and keep a
 reserve for what no forecast can see.
 
-Two facts quoted in the debrief still need a source link before we publish them:
-Opportunity's solar energy falling from about 645 to 22 watt-hours a sol in June 2018, and the 2019 conjunction
-dates. Find the NASA/JPL page for each and paste the link into `rules()` in `src/game/index.ts`. If we cannot
-find one, cut the number and keep the sentence.
+Every outside fact the game states, with its NASA source, is in [SOURCES.md](SOURCES.md). One figure could not
+be confirmed and must not be quoted: Opportunity's solar energy falling from about 645 to 22 watt-hours a sol.
+Use the confirmed dust opacity instead (a normal 0.5 rising to 10.8).
 
 ## What is real and what is a rule
 
