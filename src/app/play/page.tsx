@@ -102,7 +102,7 @@ export default function Play() {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 rounded-3xl bg-ink px-6 py-10 text-white">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 rounded-3xl bg-card px-6 py-10 text-white">
         <header className="flex flex-col gap-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/50">Test harness, not the final UI</p>
           <h1 className="text-3xl font-semibold">{state.mission.title}</h1>
