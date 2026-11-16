@@ -73,6 +73,7 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
             [
               ["guided", "Ages 7 to 9"],
               ["builder", "Ages 9 to 12"],
+              ["lab", "Advanced lab"],
             ] as [Mode, string][]
           ).map(([value, label]) => (
             <button
@@ -90,7 +91,9 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
       <p className="-mt-3 text-ink-2">
         {mode === "guided"
           ? "Mission Control sends you a forecast every sol."
-          : "You also get the Brain Bay, where you build your own forecast."}
+          : mode === "builder"
+            ? "You also get the Brain Bay, where you build your own forecast."
+            : "The Brain Bay adds three extra tools that learn from the data, for curious grown-ups and older kids."}
       </p>
 
       <div className="grid gap-5 md:grid-cols-3">
