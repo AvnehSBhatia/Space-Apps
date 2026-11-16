@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { CREW, CrewMember } from "./crew";
 import { SAVE_KEY } from "./format";
+import { Icon } from "./icons";
 
 function hasSave(): boolean {
   try {
@@ -21,35 +22,39 @@ export function HomeHero() {
   const canContinue = useSyncExternalStore(subscribe, hasSave, () => false);
 
   return (
-    <section className="flex flex-col items-center gap-6 text-center">
-      <svg viewBox="0 0 120 120" width="96" height="96" aria-hidden>
-        <circle cx="60" cy="60" r="34" fill="#FF7A3D" stroke="#1B1F3B" strokeWidth="5" />
-        <circle cx="48" cy="52" r="7" fill="#E0602A" />
-        <circle cx="70" cy="70" r="5" fill="#E0602A" />
-        <ellipse cx="60" cy="60" rx="56" ry="16" fill="none" stroke="#FFD23F" strokeWidth="6" transform="rotate(-18 60 60)" />
-        <circle cx="104" cy="44" r="7" fill="#4CC9F0" stroke="#1B1F3B" strokeWidth="3" />
-      </svg>
-      <h1 className="font-display text-6xl font-extrabold leading-none text-sun sm:text-7xl">SolCast</h1>
-      <p className="max-w-xl text-xl text-cream sm:text-2xl">
-        Keep four astronauts safe on Mars, using the real weather the Curiosity rover measured.
-      </p>
-      <div className="flex items-end gap-1" aria-hidden>
-        {CREW.map((_, i) => (
-          <CrewMember key={i} index={i} mood="happy" size={58} />
-        ))}
-      </div>
-      <div className="flex w-full max-w-sm flex-col gap-3">
-        <Link href="/mission" className="btn btn-primary w-full text-2xl">
-          ▶ Play
-        </Link>
-        {canContinue ? (
-          <Link href="/mission?continue=1" className="btn btn-sun w-full">
-            Continue my mission
+    <section className="grid items-center gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
+      <div className="flex flex-col gap-6">
+        <h1 className="text-[2.6rem] font-extrabold leading-[1.02] sm:text-6xl">Keep a Mars outpost running on real rover weather.</h1>
+        <p className="max-w-[34rem] text-xl text-ink-2">
+          Each sol, read the sky, plan your power, and see what really happened on Mars that night.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/mission" className="btn btn-primary min-w-40 text-lg">
+            <Icon name="play" size={18} filled strokeWidth={0} /> Play
           </Link>
-        ) : null}
-        <Link href="/how-it-works" className="btn btn-cream w-full">
-          How it works
-        </Link>
+          {canContinue ? (
+            <Link href="/mission?continue=1" className="btn btn-quiet text-lg">
+              Continue mission
+            </Link>
+          ) : null}
+          <Link href="/how-it-works" className="btn btn-quiet text-lg">
+            How it works
+          </Link>
+        </div>
+      </div>
+      <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-line bg-ink shadow-[0_30px_60px_-30px_rgb(21_26_58/0.45)]">
+        <Image
+          src="/art/scene-day.webp"
+          alt="A white dome habitat and solar panels on the rust-coloured plains of Mars"
+          fill
+          priority
+          sizes="(max-width: 1024px) 100vw, 640px"
+          className="object-cover object-[50%_70%]"
+        />
+        <span className="absolute right-4 top-4 inline-flex items-center gap-2 rounded-xl bg-white/95 px-3.5 py-2 font-semibold shadow-sm">
+          <Icon name="sun" size={20} className="text-sun" /> Sunlight today: High
+        </span>
+        <span className="absolute bottom-2 right-3 rounded bg-black/40 px-1.5 text-[0.7rem] text-white">AI-generated art</span>
       </div>
     </section>
   );

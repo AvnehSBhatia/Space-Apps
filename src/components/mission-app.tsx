@@ -1,17 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useReducer, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import type { Action, GameState, MissionId, Mode } from "@/contracts";
 import { game } from "@/game";
 import { BrainBay } from "./brain-bay";
-import { Habitat, Sky } from "./crew";
+import { OutpostScene } from "./crew";
 import { DataCredits } from "./data-credits";
 import { DebriefScreen } from "./debrief";
-import { SUNLIGHT_WORD, clearSave, loadGame, niceDate, saveGame } from "./format";
+import { clearSave, loadGame, saveGame } from "./format";
 import { Gauges } from "./gauges";
+import { Icon } from "./icons";
 import { BetPanel, NightPanel, ReportPanel } from "./panels";
 import { Num, RuleCardsProvider } from "./rule-cards";
+import { NavLink, SiteNav } from "./site-nav";
 
 type AppState = { game: GameState | null };
 type AppAction = Action | { type: "start"; missionId: MissionId; seed: number; mode: Mode } | { type: "menu" };
@@ -34,7 +36,18 @@ function initial(): AppState {
   return { game: null };
 }
 
-const DIFFICULTY = ["", "⭐", "⭐⭐", "⭐⭐⭐"];
+function Difficulty({ level }: { level: 1 | 2 | 3 }) {
+  return (
+    <span className="inline-flex items-center gap-2 text-ink-2" aria-label={`Difficulty ${level} of 3`}>
+      Difficulty
+      <span className="flex gap-1" aria-hidden>
+        {[1, 2, 3].map((i) => (
+          <span key={i} className={`h-2.5 w-2.5 rounded-full ${i <= level ? "bg-rust" : "bg-[#D5DBE8]"}`} />
+        ))}
+      </span>
+    </span>
+  );
+}
 
 function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: number, mode: Mode) => void }) {
   const [mode, setMode] = useState<Mode>("guided");
@@ -46,97 +59,106 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
     const match = code.trim().match(/^([a-zA-Z0-9]+)-(\d+)$/);
     const mission = match ? missions.find((m) => m.id === match[1]) : undefined;
     if (!match || !mission) {
-      setCodeProblem("That code does not look right. It looks like dust2018-12345.");
+      setCodeProblem("That code doesn't match a mission. Codes look like dust2018-12345.");
       return;
     }
     onStart(mission.id, Number(match[2]), mode);
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-display text-4xl font-extrabold">Pick a mission</h1>
-        <p className="text-cream/85">Each mission is a real stretch of weather from the Curiosity rover.</p>
-      </header>
-
-      <fieldset className="chunk flex flex-col gap-3 bg-indigo p-4">
-        <legend className="sr-only">How old are you?</legend>
-        <p className="font-display text-xl font-extrabold">How old are you?</p>
-        <div className="grid grid-cols-2 gap-3">
+    <div className="flex flex-col gap-6 py-2">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-8">
+        <h1 className="text-4xl font-extrabold sm:text-5xl">Choose a mission</h1>
+        <div role="radiogroup" aria-label="Age" className="inline-flex w-fit rounded-full border border-line bg-white p-1">
           {(
             [
-              ["guided", "7 to 9", "Mission Control helps you."],
-              ["builder", "9 to 12", "Build your own forecast too."],
-            ] as [Mode, string, string][]
-          ).map(([value, label, hint]) => (
+              ["guided", "Ages 7 to 9"],
+              ["builder", "Ages 9 to 12"],
+            ] as [Mode, string][]
+          ).map(([value, label]) => (
             <button
               key={value}
-              type="button"
-              aria-pressed={mode === value}
+              role="radio"
+              aria-checked={mode === value}
               onClick={() => setMode(value)}
-              className={`btn w-full flex-col py-2 ${mode === value ? "btn-sun" : "btn-cream"}`}
+              className={`min-h-11 rounded-full px-5 text-[0.98rem] font-semibold transition-colors ${mode === value ? "bg-dusk text-white" : "text-ink hover:bg-haze"}`}
             >
-              <span>{label}</span>
-              <span className="font-sans text-sm font-semibold">{hint}</span>
+              {label}
             </button>
           ))}
         </div>
-      </fieldset>
+      </div>
+      <p className="-mt-3 text-ink-2">
+        {mode === "guided"
+          ? "Mission Control sends you a forecast every sol."
+          : "You also get the Brain Bay, where you build your own forecast."}
+      </p>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-3">
         {missions.map((mission) => (
-          <article key={mission.id} className="chunk flex flex-col gap-3 bg-cream p-4 text-ink">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold" aria-label={`Difficulty ${mission.difficulty} of 3`}>
-                {DIFFICULTY[mission.difficulty]}
-              </span>
-              <span className="tnum rounded-full border-2 border-ink bg-sun px-2 text-sm font-bold">{mission.lengthSols} sols</span>
+          <article key={mission.id} className="card flex flex-col overflow-hidden p-2.5">
+            <div className="relative aspect-[5/2] overflow-hidden rounded-[14px] bg-ink">
+              <Image src={`/art/mission-${mission.id}.webp`} alt="" fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover" />
+              <span className="absolute bottom-1.5 right-2 rounded bg-black/40 px-1.5 text-[0.65rem] text-white">AI-generated art</span>
             </div>
-            <h2 className="font-display text-2xl font-extrabold leading-tight">{mission.title}</h2>
-            <p className="text-base">{mission.blurb}</p>
-            {mission.realEvent ? (
-              <p className="rounded-2xl bg-blue/25 p-2 text-sm">
-                <span className="font-bold">🛰️ Really happened: </span>
-                {mission.realEvent}
-              </p>
-            ) : null}
-            <button
-              className="btn btn-primary mt-auto w-full"
-              disabled={!mission.ready}
-              onClick={() => onStart(mission.id, newSeed(), mode)}
-            >
-              {mission.ready ? "Start" : "Coming soon"}
-            </button>
+            <div className="flex flex-1 flex-col gap-3 px-2.5 pb-2.5 pt-4">
+              <h2 className="text-2xl font-bold">{mission.title}</h2>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.95rem]">
+                <span className="inline-flex items-center gap-1.5 font-semibold">
+                  <Icon name="book" size={17} className="text-ink-2" />
+                  {mission.lengthSols} sols
+                </span>
+                <span className="h-4 w-px bg-line" aria-hidden />
+                <Difficulty level={mission.difficulty} />
+              </div>
+              <p className="text-[0.98rem] text-ink-2">{mission.blurb}</p>
+              {mission.realEvent ? (
+                <p className="rounded-xl bg-haze px-3 py-2 text-[0.9rem] text-ink-2">
+                  <span className="font-semibold text-ink">Really happened: </span>
+                  {mission.realEvent}
+                </p>
+              ) : null}
+              <button
+                className="btn btn-primary mt-auto w-full"
+                disabled={!mission.ready}
+                onClick={() => onStart(mission.id, newSeed(), mode)}
+              >
+                {mission.ready ? "Start" : "Coming soon"}
+              </button>
+            </div>
           </article>
         ))}
       </div>
 
       <form
-        className="chunk flex flex-col gap-2 bg-indigo p-4"
+        className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-5 sm:px-6"
         onSubmit={(event) => {
           event.preventDefault();
           playCode();
         }}
       >
-        <label htmlFor="code" className="font-display text-xl font-extrabold">
-          Got a mission code from a friend?
+        <label htmlFor="code" className="font-display text-xl font-bold sm:whitespace-nowrap">
+          Have a mission code?
         </label>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            id="code"
-            value={code}
-            onChange={(event) => {
-              setCode(event.target.value);
-              setCodeProblem(null);
-            }}
-            placeholder="dust2018-12345"
-            className="min-h-14 flex-1 rounded-2xl border-[3px] border-ink bg-cream px-4 text-lg text-ink placeholder:text-ink/40"
-          />
-          <button className="btn btn-sun" type="submit">
-            Play this code
-          </button>
-        </div>
-        {codeProblem ? <p className="text-sun">🤔 {codeProblem}</p> : null}
+        <input
+          id="code"
+          value={code}
+          onChange={(event) => {
+            setCode(event.target.value);
+            setCodeProblem(null);
+          }}
+          placeholder="Enter mission code"
+          aria-describedby={codeProblem ? "code-problem" : undefined}
+          className="min-h-12 flex-1 rounded-xl border border-line bg-white px-4 text-ink placeholder:text-ink-2/70 focus:border-dusk"
+        />
+        <button className="btn btn-primary" type="submit">
+          Play code
+        </button>
+        {codeProblem ? (
+          <p id="code-problem" className="text-[0.95rem] text-[#A3203F] sm:basis-full">
+            {codeProblem}
+          </p>
+        ) : null}
       </form>
     </div>
   );
@@ -145,47 +167,39 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
 function Outpost({ state, dispatch }: { state: GameState; dispatch: (action: Action) => void }) {
   const [bayOpen, setBayOpen] = useState(false);
   const hasBay = state.availableTools.length > 0;
+  const closeBay = useCallback(() => setBayOpen(false), []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="chunk overflow-hidden bg-indigo">
-        <Sky sunlight={state.sunlight}>
-          <div className="absolute left-3 top-3 z-10 flex flex-col gap-1 sm:left-5">
-            <p className="font-display text-sm font-extrabold uppercase tracking-wide text-ink/80">{state.mission.title}</p>
-            <p className="tnum w-fit rounded-full border-[3px] border-ink bg-cream px-3 font-display text-xl font-extrabold text-ink">
-              <Num rule="mars-day">Sol</Num> {state.solIndex + 1} of {state.mission.lengthSols}
-            </p>
-            <p className="w-fit rounded-full bg-cream/85 px-2 text-sm font-bold text-ink">
-              Earth date: {niceDate(state.todayEarthDate)}
-            </p>
-          </div>
-          <p className="absolute right-3 top-[76px] z-10 rounded-full border-2 border-ink bg-cream px-2 text-sm font-bold text-ink sm:right-5">
-            ☀️ <Num rule="sunlight">{SUNLIGHT_WORD[state.sunlight]}</Num>
-          </p>
-          <Habitat state={state} />
-        </Sky>
+    <div className="flex flex-col gap-4 py-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-ink-2">{state.mission.title}</p>
+          <h1 className="tnum text-3xl font-extrabold sm:text-4xl">
+            <Num rule="mars-day">Sol</Num> {state.solIndex + 1} <span className="text-ink-2">of {state.mission.lengthSols}</span>
+          </h1>
+        </div>
+        {hasBay ? (
+          <button className="btn btn-quiet" onClick={() => setBayOpen(true)}>
+            <Icon name="brain" size={20} className="text-dusk" />
+            Brain Bay{state.design.tools.length > 0 ? ` (${state.design.tools.length})` : ""}
+          </button>
+        ) : null}
       </div>
 
+      <OutpostScene state={state} />
       <Gauges outpost={state.outpost} />
 
       {state.problem && state.phase !== "bet" ? (
-        <p className="chunk bg-sun p-3 text-ink" role="status">
-          🤔 {state.problem}
+        <p className="rounded-2xl bg-sun-soft px-4 py-3" role="status">
+          {state.problem}
         </p>
       ) : null}
 
-      {hasBay && !bayOpen ? (
-        <button className="btn btn-cream self-end text-base" onClick={() => setBayOpen(true)}>
-          🧠 Brain Bay{state.design.tools.length > 0 ? ` (${state.design.tools.length} installed)` : ""}
-        </button>
-      ) : null}
-      {hasBay && bayOpen ? <BrainBay state={state} dispatch={dispatch} onClose={() => setBayOpen(false)} /> : null}
-
       {state.phase === "report" ? <ReportPanel state={state} dispatch={dispatch} /> : null}
       {state.phase === "bet" ? <BetPanel state={state} dispatch={dispatch} /> : null}
-      {state.phase === "night" ? (
-        <NightPanel key={state.outcomes.length} state={state} dispatch={dispatch} />
-      ) : null}
+      {state.phase === "night" ? <NightPanel key={state.outcomes.length} state={state} dispatch={dispatch} /> : null}
+
+      {hasBay && bayOpen ? <BrainBay state={state} dispatch={dispatch} onClose={closeBay} /> : null}
     </div>
   );
 }
@@ -205,22 +219,26 @@ export function MissionApp() {
 
   return (
     <RuleCardsProvider>
-      <nav className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 pt-4">
-        <Link href="/" className="whitespace-nowrap font-display text-xl font-extrabold text-sun sm:text-2xl">
-          ☀️ SolCast
-        </Link>
-        <div className="flex gap-2">
-          {state ? (
-            <button className="btn btn-cream min-h-12 whitespace-nowrap px-3 text-base" onClick={() => dispatch({ type: "menu" })}>
-              Missions
-            </button>
-          ) : null}
-          <Link href="/how-it-works" className="btn btn-cream min-h-12 whitespace-nowrap px-3 text-base">
-            Rules
-          </Link>
-        </div>
-      </nav>
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-4">
+      <SiteNav
+        right={
+          <>
+            {state ? (
+              <button
+                className="rounded-xl px-3 py-2 text-ink-2 transition-colors hover:bg-white"
+                onClick={() => dispatch({ type: "menu" })}
+              >
+                Missions
+              </button>
+            ) : (
+              <NavLink href="/mission" active>
+                Missions
+              </NavLink>
+            )}
+            <NavLink href="/how-it-works">How it works</NavLink>
+          </>
+        }
+      />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-6">
         {!state ? (
           <MissionSelect onStart={(missionId, seed, mode) => dispatch({ type: "start", missionId, seed, mode })} />
         ) : state.phase === "ended" ? (

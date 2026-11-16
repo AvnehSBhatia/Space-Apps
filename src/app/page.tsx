@@ -1,34 +1,53 @@
-import Link from "next/link";
 import { DataCredits } from "@/components/data-credits";
 import { HomeHero } from "@/components/home-hero";
+import { Icon, type IconName } from "@/components/icons";
+import { NavLink, SiteNav } from "@/components/site-nav";
+
+const STEPS: { icon: IconName; tone: string; title: string; text: string }[] = [
+  {
+    icon: "sun",
+    tone: "text-sun",
+    title: "Read the sky",
+    text: "The Curiosity rover measured how much sunlight reached the ground. That sets your solar power.",
+  },
+  {
+    icon: "bolt",
+    tone: "text-battery",
+    title: "Plan your power",
+    text: "Spend energy growing air and food, or save it in the battery for the night.",
+  },
+  {
+    icon: "moon",
+    tone: "text-dusk",
+    title: "Face the night",
+    text: "Then the rover's real overnight low is revealed, and you see if your plan held.",
+  },
+];
 
 export default function Home() {
   return (
     <>
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-10 sm:py-16">
+      <SiteNav
+        right={
+          <>
+            <NavLink href="/mission">Missions</NavLink>
+            <NavLink href="/how-it-works">How it works</NavLink>
+          </>
+        }
+      />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6 sm:py-16">
         <HomeHero />
-        <section className="grid gap-4 sm:grid-cols-3">
-          {[
-            ["☀️", "Read the sky", "Real sunlight from the Curiosity rover sets your power."],
-            ["🌱", "Make a plan", "Grow air and food, or save energy for the night."],
-            ["🌙", "Face the night", "The rover's real temperature decides what happens."],
-          ].map(([icon, title, text]) => (
-            <div key={title} className="chunk flex flex-col gap-1 bg-indigo p-4">
-              <p className="text-3xl" aria-hidden>
-                {icon}
-              </p>
-              <h2 className="font-display text-xl font-extrabold text-sun">{title}</h2>
-              <p className="text-base text-cream/90">{text}</p>
+        <section className="grid gap-4 md:grid-cols-3" aria-label="How a sol works">
+          {STEPS.map((step) => (
+            <div key={step.title} className="card flex gap-4 p-5 sm:p-6">
+              <Icon name={step.icon} size={36} strokeWidth={1.8} className={`flex-none ${step.tone}`} />
+              <div className="border-l border-line pl-4">
+                <h2 className="text-xl font-bold">{step.title}</h2>
+                <p className="mt-1 text-ink-2">{step.text}</p>
+              </div>
             </div>
           ))}
         </section>
-        <p className="text-center text-base text-cream/80">
-          Curious how the numbers work?{" "}
-          <Link href="/how-it-works" className="font-bold text-sun underline underline-offset-4">
-            See every rule
-          </Link>
-          .
-        </p>
       </main>
       <DataCredits />
     </>

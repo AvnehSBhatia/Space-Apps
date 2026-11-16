@@ -3,61 +3,55 @@
 import type { Outpost } from "@/contracts";
 import { RULES } from "@/game/rules";
 import { kWh } from "./format";
+import { Icon, type IconName } from "./icons";
 import { Num } from "./rule-cards";
 
 type Level = "good" | "low" | "danger";
 
-const LEVEL_STYLE: Record<Level, { word: string; icon: string; chip: string }> = {
-  good: { word: "OK", icon: "✓", chip: "bg-mint" },
-  low: { word: "Low", icon: "!", chip: "bg-sun" },
-  danger: { word: "Danger", icon: "!!", chip: "bg-berry" },
-};
-
-function Bar({ percent, colour }: { percent: number; colour: string }) {
-  const p = Math.max(0, Math.min(100, percent));
-  return (
-    <div className="h-5 overflow-hidden rounded-full border-[3px] border-ink bg-white">
-      <div className="gauge-fill h-full rounded-full" style={{ width: `${p}%`, background: colour }} />
-    </div>
-  );
-}
-
 function Gauge({
   icon,
+  tone,
   label,
   value,
   rule,
+  note,
   percent,
-  colour,
   level,
   extra,
 }: {
-  icon: string;
+  icon: IconName;
+  tone: string;
   label: string;
   value: string;
   rule?: string;
+  note: string;
   percent: number;
-  colour: string;
   level: Level;
   extra?: React.ReactNode;
 }) {
-  const style = LEVEL_STYLE[level];
+  const fill = level === "danger" ? "var(--danger)" : level === "low" ? "var(--sun)" : tone;
   return (
-    <div className="chunk flex flex-col gap-1.5 bg-cream px-3 py-2 text-ink">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-display text-lg font-extrabold leading-none">
-          <span aria-hidden>{icon}</span> {label}
-        </span>
-        <span className={`${style.chip} rounded-full border-2 border-ink px-2 text-xs font-bold`}>
-          <span aria-hidden>{style.icon} </span>
-          {style.word}
+    <div className="card flex flex-col gap-2.5 p-4">
+      <div className="flex items-center gap-2.5">
+        <Icon name={icon} size={24} style={{ color: tone }} />
+        <span className="font-display text-lg font-bold">{label}</span>
+        <span className="tnum ml-auto text-lg font-bold">
+          {rule ? <Num rule={rule}>{value}</Num> : value}
         </span>
       </div>
-      <Bar percent={percent} colour={colour} />
-      <div className="text-base">
-        {rule ? <Num rule={rule}>{value}</Num> : <span className="tnum">{value}</span>}
-        {extra}
+      <div className="h-2.5 overflow-hidden rounded-full bg-[#E6EAF2]" role="presentation">
+        <div className="bar-fill h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, percent))}%`, background: fill }} />
       </div>
+      <div className="flex items-center justify-between gap-2 text-[0.92rem] text-ink-2">
+        <span>{note}</span>
+        {level !== "good" ? (
+          <span className={`inline-flex items-center gap-1 font-semibold ${level === "danger" ? "text-danger" : "text-[#A8670F]"}`}>
+            <Icon name="alert" size={15} />
+            {level === "danger" ? "Danger" : "Low"}
+          </span>
+        ) : null}
+      </div>
+      {extra}
     </div>
   );
 }
@@ -66,47 +60,53 @@ export function Gauges({ outpost }: { outpost: Outpost }) {
   const batteryPct = (outpost.batteryWh / RULES.BATTERY_CAPACITY_WH) * 100;
   const cropPct = (outpost.cropLightWh / Math.max(1, outpost.cropNeedsWh)) * 100;
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4">
       <Gauge
-        icon="❤️"
-        label="Crew"
-        value={`${Math.round(outpost.crewHealth)} of 100`}
+        icon="heart"
+        tone="var(--rust)"
+        label="Crew health"
+        value={`${Math.round(outpost.crewHealth)}`}
+        note="Out of 100"
         percent={outpost.crewHealth}
-        colour="#EF476F"
         level={outpost.crewHealth < 30 ? "danger" : outpost.crewHealth < 60 ? "low" : "good"}
       />
       <Gauge
-        icon="🔋"
+        icon="bolt"
+        tone="var(--battery)"
         label="Battery"
         value={kWh(outpost.batteryWh)}
         rule="keepAlive"
+        note="Stored for the night"
         percent={batteryPct}
-        colour="#4CC9F0"
         level={batteryPct < 15 ? "danger" : batteryPct < 35 ? "low" : "good"}
       />
       <Gauge
-        icon="💨"
+        icon="air"
+        tone="var(--air)"
         label="Air"
         value={`${Math.round(outpost.airPercent)}%`}
         rule="air"
+        note="Breathable air"
         percent={outpost.airPercent}
-        colour="#3DDC97"
         level={outpost.airPercent < RULES.AIR_WARNING ? "danger" : outpost.airPercent < 50 ? "low" : "good"}
       />
       <Gauge
-        icon="🥕"
+        icon="sprout"
+        tone="var(--food)"
         label="Food"
         value={`${outpost.meals} meals`}
+        note="In the pantry"
         percent={Math.min(100, (outpost.meals / 48) * 100)}
-        colour="#FF7A3D"
         level={outpost.meals < 4 ? "danger" : outpost.meals < 8 ? "low" : "good"}
         extra={
-          <div className="mt-1 flex items-center gap-2 text-sm">
-            <span aria-hidden>🌱</span>
-            <div className="h-3 flex-1 overflow-hidden rounded-full border-2 border-ink bg-white">
-              <div className="gauge-fill h-full bg-leaf" style={{ width: `${Math.min(100, cropPct)}%` }} />
+          <div className="flex items-center gap-2 border-t border-line pt-2.5 text-[0.92rem] text-ink-2">
+            <span>Next crop</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#E6EAF2]">
+              <div className="bar-fill h-full rounded-full bg-food/70" style={{ width: `${Math.min(100, cropPct)}%` }} />
             </div>
-            <Num rule="crop">crop {Math.round(cropPct)}%</Num>
+            <Num rule="crop" className="font-semibold text-ink">
+              {Math.round(cropPct)}%
+            </Num>
           </div>
         }
       />

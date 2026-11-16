@@ -1,322 +1,286 @@
 @import "tailwindcss";
 
+/*
+ * SolCast design tokens.
+ * Mars sunsets are blue, so the primary is a dusk blue; butterscotch is the dust and the sun.
+ */
 :root {
-  --navy: #101436;
-  --indigo: #23295a;
-  --cream: #fff6e5;
-  --ink: #1b1f3b;
-  --orange: #ff7a3d;
-  --sun: #ffd23f;
-  --mint: #3ddc97;
-  --blue: #4cc9f0;
-  --leaf: #8bd450;
-  --berry: #ef476f;
+  --haze: #f3f5fa; /* page */
+  --card: #ffffff;
+  --line: #dce2ee; /* card borders */
+  --ink: #151a3a; /* text, night panels */
+  --ink-2: #4a5174; /* secondary text */
+  --dusk: #3d5bd9; /* primary */
+  --dusk-deep: #2e46b3;
+  --dusk-soft: #e7ecfc;
+  --sun: #f2a541;
+  --sun-soft: #fdf1dc;
+  --rust: #c8552b;
+  --air: #1fb58f;
+  --air-soft: #dff5ee;
+  --battery: #2b9fe0;
+  --battery-soft: #e0f1fb;
+  --food: #6cb33f;
+  --food-soft: #ebf5e2;
+  --danger: #e04867;
+  --danger-soft: #fce6ea;
 }
 
 @theme inline {
-  --color-navy: var(--navy);
-  --color-indigo: var(--indigo);
-  --color-cream: var(--cream);
+  --color-haze: var(--haze);
+  --color-card: var(--card);
+  --color-line: var(--line);
   --color-ink: var(--ink);
-  --color-orange: var(--orange);
+  --color-ink-2: var(--ink-2);
+  --color-dusk: var(--dusk);
+  --color-dusk-deep: var(--dusk-deep);
+  --color-dusk-soft: var(--dusk-soft);
   --color-sun: var(--sun);
-  --color-mint: var(--mint);
-  --color-blue: var(--blue);
-  --color-leaf: var(--leaf);
-  --color-berry: var(--berry);
-  --font-display: var(--font-baloo), system-ui, sans-serif;
-  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --color-sun-soft: var(--sun-soft);
+  --color-rust: var(--rust);
+  --color-air: var(--air);
+  --color-air-soft: var(--air-soft);
+  --color-battery: var(--battery);
+  --color-battery-soft: var(--battery-soft);
+  --color-food: var(--food);
+  --color-food-soft: var(--food-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-display: var(--font-display-face), system-ui, sans-serif;
+  --font-sans: var(--font-body-face), system-ui, sans-serif;
 }
 
 body {
-  background-color: var(--navy);
-  color: var(--cream);
-  font-family: var(--font-nunito), system-ui, sans-serif;
-  font-weight: 600;
+  background: var(--haze);
+  color: var(--ink);
+  font-family: var(--font-body-face), system-ui, sans-serif;
   font-size: 18px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
+h1,
+h2,
+h3,
 .font-display {
-  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-family: var(--font-display-face), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .tnum {
   font-variant-numeric: tabular-nums;
 }
 
-/* Starfield behind every screen. */
-.stars {
-  background-image:
-    radial-gradient(1.5px 1.5px at 20px 30px, #fff9 50%, transparent 51%),
-    radial-gradient(1px 1px at 120px 80px, #fff8 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 200px 150px, #fff6 50%, transparent 51%),
-    radial-gradient(1px 1px at 60px 190px, #fff7 50%, transparent 51%),
-    radial-gradient(2px 2px at 260px 40px, #ffd23f88 50%, transparent 51%);
-  background-size: 300px 220px;
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgb(21 26 58 / 0.04), 0 8px 24px -12px rgb(21 26 58 / 0.12);
 }
 
-/* Chunky card and button look. */
-.chunk {
-  border: 3px solid var(--ink);
-  border-radius: 24px;
-  box-shadow: 0 6px 0 var(--ink);
-}
-
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 56px;
-  padding: 0.5rem 1.5rem;
-  border: 3px solid var(--ink);
-  border-radius: 20px;
-  box-shadow: 0 6px 0 var(--ink);
-  font-family: var(--font-baloo), system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 1.25rem;
+  min-height: 52px;
+  padding: 0.75rem 1.4rem;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 1.05rem;
   line-height: 1.1;
-  color: var(--ink);
-  text-align: center;
-  transition:
-    transform 90ms ease,
-    box-shadow 90ms ease,
-    filter 120ms ease;
   cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 120ms ease,
+    box-shadow 160ms ease;
   user-select: none;
 }
-.btn:hover {
-  filter: brightness(1.06);
-}
 .btn:active:not(:disabled) {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 var(--ink);
+  transform: translateY(1px) scale(0.99);
 }
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--orange);
+  background: var(--dusk);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px rgb(61 91 217 / 0.7);
 }
-.btn-sun {
-  background: var(--sun);
+.btn-primary:hover:not(:disabled) {
+  background: var(--dusk-deep);
 }
-.btn-cream {
-  background: var(--cream);
+.btn-quiet {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
 }
-.btn-mint {
-  background: var(--mint);
+.btn-quiet:hover:not(:disabled) {
+  border-color: #b9c3da;
+  background: #fafbfe;
+}
+.btn-ghost-dark {
+  background: transparent;
+  color: #fff;
+  border-color: rgb(255 255 255 / 0.28);
+}
+.btn-ghost-dark:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.08);
 }
 
 :focus-visible {
-  outline: 4px solid var(--sun);
-  outline-offset: 3px;
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+  border-radius: 10px;
 }
 
-/* The greenhouse slider. */
+/* Greenhouse slider */
 .slider {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 28px;
+  height: 12px;
   border-radius: 999px;
-  border: 3px solid var(--ink);
-  background: linear-gradient(
-    to right,
-    var(--leaf) 0%,
-    var(--leaf) var(--fill, 0%),
-    #ffffff var(--fill, 0%),
-    #ffffff 100%
-  );
+  background: linear-gradient(to right, var(--food) 0%, var(--food) var(--fill, 0%), #e3e8f2 var(--fill, 0%), #e3e8f2 100%);
   cursor: pointer;
 }
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 48px;
-  height: 48px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: var(--sun);
-  border: 4px solid var(--ink);
-  box-shadow: 0 4px 0 var(--ink);
+  background: #fff;
+  border: 2px solid var(--food);
+  box-shadow: 0 2px 8px rgb(21 26 58 / 0.25);
 }
 .slider::-moz-range-thumb {
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--sun);
-  border: 4px solid var(--ink);
-  box-shadow: 0 4px 0 var(--ink);
+  background: #fff;
+  border: 2px solid var(--food);
+  box-shadow: 0 2px 8px rgb(21 26 58 / 0.25);
 }
 .slider:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Gauges spring to their new value. */
-.gauge-fill {
-  transition: width 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+/* Switch */
+.switch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  flex: none;
+  border-radius: 999px;
+  background: #d5dbe8;
+  transition: background-color 180ms ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(21 26 58 / 0.3);
+  transition: transform 180ms ease;
+}
+.switch[data-on="true"] {
+  background: var(--dusk);
+}
+.switch[data-on="true"]::after {
+  transform: translateX(22px);
 }
 
-/* Crew moods. */
-@keyframes bounce-soft {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
+.bar-fill {
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-@keyframes shiver {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-2px);
-  }
-  75% {
-    transform: translateX(2px);
-  }
+.thermo-fill {
+  transition: height 1100ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-@keyframes droop {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(3px) rotate(-3deg);
-  }
-}
-@keyframes cheer {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  40% {
-    transform: translateY(-12px) scale(1.04);
-  }
-}
-@keyframes blink {
-  0%,
-  88%,
-  100% {
-    transform: scaleY(1);
-  }
-  92% {
-    transform: scaleY(0.1);
-  }
-}
-@keyframes puff {
-  0% {
-    opacity: 0.8;
-    transform: translate(0, 0) scale(0.6);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(10px, -14px) scale(1.4);
-  }
-}
-@keyframes dust {
+
+/* The one orchestrated moment: the night reveal. */
+@keyframes reveal-up {
   from {
-    transform: translateX(-20%);
+    opacity: 0;
+    transform: translateY(10px);
   }
   to {
-    transform: translateX(20%);
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes tag-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.6) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg);
+  }
+}
+@keyframes dust-drift {
+  from {
+    transform: translateX(-12%);
+  }
+  to {
+    transform: translateX(12%);
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
   }
 }
 @keyframes confetti {
   0% {
     opacity: 1;
-    transform: translateY(-10px) rotate(0deg);
+    transform: translateY(-8px) rotate(0);
   }
   100% {
     opacity: 0;
-    transform: translateY(140px) rotate(540deg);
+    transform: translateY(120px) rotate(400deg);
   }
 }
-@keyframes stamp {
-  0% {
-    opacity: 0;
-    transform: scale(2.2) rotate(-14deg);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(0.9) rotate(-8deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(-8deg);
-  }
-}
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes pulse-dot {
+@keyframes waiting {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.25;
   }
   50% {
     opacity: 1;
   }
 }
 
-.mood-happy {
-  animation: bounce-soft 1.6s ease-in-out infinite;
+.reveal {
+  animation: reveal-up 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.mood-cold {
-  animation: shiver 0.25s linear infinite;
+.real-tag {
+  animation: tag-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 250ms;
 }
-.mood-tired {
-  animation: droop 2.6s ease-in-out infinite;
+.dust {
+  animation: dust-drift 14s ease-in-out infinite alternate;
 }
-.mood-cheer {
-  animation: cheer 0.7s ease-in-out infinite;
-}
-.mood-hungry {
-  animation: droop 3.2s ease-in-out infinite;
-}
-.eyes-blink {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: blink 3.5s infinite;
-}
-.eyes-slow {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: blink 1.6s infinite;
-}
-.breath {
-  transform-box: fill-box;
-  animation: puff 1.6s ease-out infinite;
-}
-.dust-layer {
-  animation: dust 9s ease-in-out infinite alternate;
+.twinkle {
+  animation: twinkle 3s ease-in-out infinite;
 }
 .confetti-bit {
   animation: confetti 1.8s ease-in forwards;
 }
-.stamp {
-  animation: stamp 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-.pop-in {
-  animation: pop-in 350ms ease-out both;
-}
-.dot-pulse {
-  animation: pulse-dot 1s ease-in-out infinite;
-}
-.thermo-fill {
-  transition: height 900ms cubic-bezier(0.34, 1.3, 0.64, 1);
+.waiting-dot {
+  animation: waiting 1s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
