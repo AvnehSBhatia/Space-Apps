@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
-import type { GameState, UvIndex } from "@/contracts";
+import type { GameState } from "@/contracts";
 import { SUNLIGHT_WORD, niceDate } from "./format";
 import { Icon, type IconName } from "./icons";
+import { MarsScene } from "./mars-scene";
 import { Num } from "./rule-cards";
 
 /** The crew is shown as four suit colours, never as drawn people. */
-const SUITS = ["#E8743B", "#3D5BD9", "#5FA83A", "#E9B22F"];
+const SUITS = ["#ff4a1f", "#7cb8ec", "#b9d36a", "#f2b24a"];
 
 export type Mood = "well" | "cold" | "tired" | "hungry" | "harvest" | "huddled";
 
@@ -35,13 +35,13 @@ export const MOOD: Record<Mood, { icon: IconName; word: string; tone: string }> 
 export function CrewStatus({ mood }: { mood: Mood }) {
   const m = MOOD[mood];
   return (
-    <div className="inline-flex items-center gap-3 rounded-full bg-white/95 px-3 py-1.5 text-[0.95rem] font-semibold text-ink shadow-sm">
+    <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-haze/85 px-3 py-1.5 text-[0.95rem] font-medium text-ink backdrop-blur">
       <span className="flex -space-x-1.5" aria-hidden>
         {SUITS.map((colour, i) => (
           <svg key={colour} viewBox="0 0 20 20" width="22" height="22">
-            <circle cx="10" cy="10" r="9" fill={colour} stroke="#fff" strokeWidth="2" />
-            <rect x="5" y="6.5" width="10" height="6" rx="3" fill={mood === "cold" ? "#BFE6FA" : "#1B2148"} opacity={0.85} />
-            <circle cx={7.5 + (i % 2)} cy="8.4" r="1" fill="#fff" opacity="0.8" />
+            <circle cx="10" cy="10" r="9" fill={colour} stroke="#18191b" strokeWidth="2" />
+            <rect x="5" y="6.5" width="10" height="6" rx="3" fill={mood === "cold" ? "#cfe7f7" : "#18191b"} />
+            <circle cx={7.5 + (i % 2)} cy="8.4" r="1" fill="#eff0f1" opacity="0.7" />
           </svg>
         ))}
       </span>
@@ -53,19 +53,8 @@ export function CrewStatus({ mood }: { mood: Mood }) {
   );
 }
 
-function sceneFor(state: GameState): { src: string; alt: string } {
-  if (state.phase === "night") return { src: "/art/scene-night.webp", alt: "The outpost at night under the stars" };
-  const byLight: Record<UvIndex, { src: string; alt: string }> = {
-    Very_High: { src: "/art/scene-day.webp", alt: "The outpost on a clear, bright day" },
-    High: { src: "/art/scene-day.webp", alt: "The outpost on a clear, bright day" },
-    Moderate: { src: "/art/scene-haze.webp", alt: "The outpost on a hazy, dusty day" },
-    Low: { src: "/art/scene-storm.webp", alt: "The outpost inside a thick dust storm" },
-  };
-  return byLight[state.sunlight];
-}
-
 function Confetti() {
-  const colours = ["#F2A541", "#3D5BD9", "#1FB58F", "#E04867", "#6CB33F"];
+  const colours = ["#ff4a1f", "#f2b24a", "#6fd3a6", "#7cb8ec", "#b9d36a"];
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       {Array.from({ length: 22 }, (_, i) => (
@@ -79,46 +68,41 @@ function Confetti() {
   );
 }
 
-/** The outpost banner. The picture follows the real sunlight; chips carry the data. */
+const CHIP = "inline-flex items-center gap-2 rounded-full border border-white/10 bg-haze/85 px-3 py-1.5 text-[0.95rem] font-medium text-ink backdrop-blur";
+
+/** The outpost banner: Gale Crater drawn in SVG. The sky follows the real sunlight; chips carry the data. */
 export function OutpostScene({ state }: { state: GameState }) {
-  const scene = sceneFor(state);
   const mood = moodOf(state);
   const lost = state.ending === "crewLost";
   const night = state.phase === "night";
+  const weather = night ? "night" : state.sunlight;
 
   return (
-    <div className="relative h-56 overflow-hidden rounded-[22px] border border-line bg-ink sm:h-64 lg:h-72">
-      <Image
-        src={scene.src}
-        alt={scene.alt}
-        fill
-        priority
-        sizes="(max-width: 1200px) 100vw, 1152px"
-        className="object-cover object-[50%_62%]"
+    <div className="relative h-56 overflow-hidden rounded-[16px] border border-line bg-deep sm:h-64 lg:h-[19rem]">
+      <MarsScene
+        weather={weather}
+        className="absolute inset-0 h-full w-full"
+        title={night ? "The outpost at night in Gale Crater" : `The outpost in Gale Crater, sunlight ${SUNLIGHT_WORD[state.sunlight]}`}
       />
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/25 to-transparent" aria-hidden />
-      <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-xl bg-white/95 px-3 py-1.5 text-[0.95rem] font-semibold text-ink shadow-sm sm:left-4 sm:top-4">
-        <Icon name="book" size={17} className="text-ink-2" />
-        Earth date {niceDate(state.todayEarthDate)}
+      <span className={`${CHIP} absolute left-3 top-3 sm:left-4 sm:top-4`}>
+        <Icon name="book" size={16} className="text-ink-2" />
+        {niceDate(state.todayEarthDate)}
       </span>
       {!night ? (
-        <span className="absolute right-3 top-14 inline-flex items-center gap-2 rounded-xl bg-white/95 px-3 py-1.5 text-[0.95rem] font-semibold text-ink shadow-sm sm:right-4 sm:top-4">
-          <Icon name="sun" size={18} className="text-sun" />
-          Sunlight: <Num rule="sunlight">{SUNLIGHT_WORD[state.sunlight]}</Num>
+        <span className={`${CHIP} absolute right-3 top-14 sm:right-4 sm:top-4`}>
+          <Icon name="sun" size={17} className="text-sun" />
+          Sunlight <Num rule="sunlight">{SUNLIGHT_WORD[state.sunlight]}</Num>
         </span>
       ) : null}
       <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
         {lost ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 font-semibold text-ink">
-            <Icon name="rocket" size={18} className="text-dusk" /> The crew was flown home safely.
+          <span className={CHIP}>
+            <Icon name="rocket" size={17} className="text-dusk" /> The crew was flown home safely.
           </span>
         ) : (
           <CrewStatus mood={mood} />
         )}
       </div>
-      <span className="absolute bottom-2 right-3 rounded bg-black/40 px-1.5 text-[0.7rem] font-medium text-white">
-        AI-generated art
-      </span>
       {mood === "harvest" ? <Confetti /> : null}
     </div>
   );

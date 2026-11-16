@@ -22,8 +22,8 @@ export function RulesGrid() {
             role="radio"
             aria-checked={filter === kind}
             onClick={() => setFilter(kind)}
-            className={`min-h-11 rounded-full border px-4 text-[0.98rem] font-semibold transition-colors ${
-              filter === kind ? "border-dusk bg-dusk text-white" : "border-line bg-white text-ink hover:border-[#b9c3da]"
+            className={`min-h-11 rounded-full border px-4 text-[0.98rem] font-medium transition-colors ${
+              filter === kind ? "border-dusk bg-dusk text-on-action" : "border-line bg-card text-ink hover:border-[#4a4d53]"
             }`}
           >
             {kind === "all" ? "All" : KIND_LABEL(kind)}

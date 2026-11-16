@@ -14,7 +14,7 @@ Add a row every time an AI tool produces something that ends up in the project. 
 | 2026-11-15 | Claude Code (Anthropic) | Twelve simulated judge reviews of the concept against the official rubric; their feedback changed the design | Summarised in `docs/SPEC.md` |
 | 2026-11-15 | Claude Code (Anthropic) | Drafts of the spec, the three part briefs, the demo script and the project page text | `docs/` |
 | 2026-11-15 | Claude Code (Anthropic) | The game UI (Part B): screens, components, styles and icons | `src/app`, `src/components`; `Co-Authored-By` trailer |
-| 2026-11-15 | OpenAI image generation via Codex CLI, directed by Claude Code | Page design mockups (not shipped) and the illustrations: four outpost weather scenes and three mission card pictures. No people, no NASA marks. Each file carries a visible "AI-generated" watermark, and the UI labels them too | `public/art/` |
+| 2026-11-15 | OpenAI image generation via Codex CLI, directed by Claude Code | Design mockups used only as layout references. No AI image ships in the game: every illustration is hand-built SVG in `src/components/mars-scene.tsx` | Not in the repo |
 
 ## How we mark it
 

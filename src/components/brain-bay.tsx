@@ -25,7 +25,7 @@ function HitDots({ tool, state }: { tool: ToolInfo; state: GameState }) {
             <span
               key={p.sol}
               title={known ? `Sol ${p.sol}: guessed ${p.guess} C, real ${p.actual} C` : `Sol ${p.sol}: no data`}
-              className={`h-2.5 w-2.5 rounded-full ${!known ? "bg-[#E1E5EE]" : hit ? "bg-air" : "bg-[#C4CAD8]"}`}
+              className={`h-2.5 w-2.5 rounded-full ${!known ? "bg-line" : hit ? "bg-air" : "bg-[#55585e]"}`}
             />
           );
         })}
@@ -65,12 +65,12 @@ export function BrainBay({ state, dispatch, onClose }: { state: GameState; dispa
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-labelledby="bay-title">
-      <button className="absolute inset-0 cursor-default bg-ink/35 backdrop-blur-[2px]" aria-label="Close Brain Bay" onClick={onClose} />
-      <aside className="reveal relative flex h-full w-full max-w-xl flex-col gap-5 overflow-y-auto bg-haze p-5 shadow-2xl sm:rounded-l-[28px] sm:p-7">
+      <button className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-[2px]" aria-label="Close Brain Bay" onClick={onClose} />
+      <aside className="reveal relative flex h-full w-full max-w-xl flex-col gap-5 overflow-y-auto border-l border-line bg-haze p-5 shadow-2xl sm:rounded-l-[20px] sm:p-7">
         <div className="flex items-start gap-3">
-          <Icon name="brain" size={34} className="mt-1 text-dusk" />
+          <Icon name="brain" size={30} className="mt-1 text-dusk" />
           <div className="flex-1">
-            <h2 id="bay-title" className="text-3xl font-bold">
+            <h2 id="bay-title" className="text-3xl">
               Brain Bay
             </h2>
             <p className="text-ink-2">Install forecasting tools. Each uses a little power.</p>
@@ -86,13 +86,13 @@ export function BrainBay({ state, dispatch, onClose }: { state: GameState; dispa
             const on = installed.has(tool.id);
             return (
               <li key={tool.id} className="card flex flex-wrap items-center gap-4 p-4">
-                <span className="grid h-12 w-12 flex-none place-items-center rounded-xl bg-haze text-ink">
+                <span className="grid h-12 w-12 flex-none place-items-center rounded-xl border border-line text-ink">
                   <Icon name={TOOL_ICON[tool.id] ?? "cpu"} size={26} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-display text-xl font-bold">{tool.name}</p>
-                    <span className="tnum inline-flex items-center gap-1 rounded-full bg-dusk-soft px-2 py-0.5 text-sm font-semibold text-dusk">
+                    <p className="font-display text-xl">{tool.name}</p>
+                    <span className="readout inline-flex items-center gap-1 rounded-full bg-dusk-soft px-2 py-0.5 text-[13px] text-dusk">
                       <Icon name="bolt" size={14} />
                       {tool.energyWhPerSol < 1000 ? `${tool.energyWhPerSol} Wh` : kWh(tool.energyWhPerSol)}
                     </span>

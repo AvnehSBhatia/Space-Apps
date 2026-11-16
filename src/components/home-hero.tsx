@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { SAVE_KEY } from "./format";
 import { Icon } from "./icons";
+import { MarsScene } from "./mars-scene";
 
 function hasSave(): boolean {
   try {
@@ -18,13 +18,13 @@ function hasSave(): boolean {
 
 const subscribe = () => () => {};
 
-export function HomeHero() {
+export function HomeHero({ solCount }: { solCount: number }) {
   const canContinue = useSyncExternalStore(subscribe, hasSave, () => false);
 
   return (
     <section className="grid items-center gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
       <div className="flex flex-col gap-6">
-        <h1 className="text-[2.6rem] font-extrabold leading-[1.02] sm:text-6xl">Keep a Mars outpost running on real rover weather.</h1>
+        <h1 className="text-[2.7rem] sm:text-[4rem]">Keep a Mars outpost running on real rover weather.</h1>
         <p className="max-w-[34rem] text-xl text-ink-2">
           Each sol, read the sky, plan your power, and see what really happened on Mars that night.
         </p>
@@ -42,19 +42,12 @@ export function HomeHero() {
           </Link>
         </div>
       </div>
-      <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-line bg-ink shadow-[0_30px_60px_-30px_rgb(21_26_58/0.45)]">
-        <Image
-          src="/art/scene-day.webp"
-          alt="A white dome habitat and solar panels on the rust-coloured plains of Mars"
-          fill
-          priority
-          sizes="(max-width: 1024px) 100vw, 640px"
-          className="object-cover object-[50%_70%]"
-        />
-        <span className="absolute right-4 top-4 inline-flex items-center gap-2 rounded-xl bg-white/95 px-3.5 py-2 font-semibold shadow-sm">
-          <Icon name="sun" size={20} className="text-sun" /> Sunlight today: High
-        </span>
-        <span className="absolute bottom-2 right-3 rounded bg-black/40 px-1.5 text-[0.7rem] text-white">AI-generated art</span>
+      <div className="relative aspect-[16/11] overflow-hidden rounded-[16px] border border-line bg-deep">
+        <MarsScene weather="High" className="absolute inset-0 h-full w-full" title="A habitat on the floor of Gale Crater, with Mount Sharp behind" />
+        <div className="absolute left-3 top-3 flex flex-col gap-0.5 rounded-xl border border-white/10 bg-haze/85 px-4 py-2.5 backdrop-blur sm:left-4 sm:top-4">
+          <span className="label">Gale Crater, Mars</span>
+          <span className="readout text-[13px] text-ink">{solCount.toLocaleString("en-US")} sols of real rover weather</span>
+        </div>
       </div>
     </section>
   );

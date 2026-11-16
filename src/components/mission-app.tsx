@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useReducer, useState } from "react";
 import type { Action, GameState, MissionId, Mode } from "@/contracts";
 import { game } from "@/game";
@@ -11,6 +10,7 @@ import { DebriefScreen } from "./debrief";
 import { clearSave, loadGame, saveGame } from "./format";
 import { Gauges } from "./gauges";
 import { Icon } from "./icons";
+import { ConjunctionArt, MarsScene } from "./mars-scene";
 import { BetPanel, NightPanel, ReportPanel } from "./panels";
 import { Num, RuleCardsProvider } from "./rule-cards";
 import { NavLink, SiteNav } from "./site-nav";
@@ -42,7 +42,7 @@ function Difficulty({ level }: { level: 1 | 2 | 3 }) {
       Difficulty
       <span className="flex gap-1" aria-hidden>
         {[1, 2, 3].map((i) => (
-          <span key={i} className={`h-2.5 w-2.5 rounded-full ${i <= level ? "bg-rust" : "bg-[#D5DBE8]"}`} />
+          <span key={i} className={`h-2.5 w-2.5 rounded-full ${i <= level ? "bg-rust" : "bg-[#3a3d42]"}`} />
         ))}
       </span>
     </span>
@@ -68,8 +68,8 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
   return (
     <div className="flex flex-col gap-6 py-2">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-8">
-        <h1 className="text-4xl font-extrabold sm:text-5xl">Choose a mission</h1>
-        <div role="radiogroup" aria-label="Age" className="inline-flex w-fit rounded-full border border-line bg-white p-1">
+        <h1 className="text-4xl sm:text-5xl">Choose a mission</h1>
+        <div role="radiogroup" aria-label="Age" className="inline-flex w-fit rounded-full border border-line bg-card p-1">
           {(
             [
               ["guided", "Ages 7 to 9"],
@@ -81,7 +81,7 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
               role="radio"
               aria-checked={mode === value}
               onClick={() => setMode(value)}
-              className={`min-h-11 rounded-full px-5 text-[0.98rem] font-semibold transition-colors ${mode === value ? "bg-dusk text-white" : "text-ink hover:bg-haze"}`}
+              className={`min-h-11 rounded-full px-5 text-[0.98rem] font-medium transition-colors ${mode === value ? "bg-dusk text-on-action" : "text-ink hover:bg-[#2a2c30]"}`}
             >
               {label}
             </button>
@@ -97,12 +97,15 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
       <div className="grid gap-5 md:grid-cols-3">
         {missions.map((mission) => (
           <article key={mission.id} className="card flex flex-col overflow-hidden p-2.5">
-            <div className="relative aspect-[5/2] overflow-hidden rounded-[14px] bg-ink">
-              <Image src={`/art/mission-${mission.id}.webp`} alt="" fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover" />
-              <span className="absolute bottom-1.5 right-2 rounded bg-black/40 px-1.5 text-[0.65rem] text-white">AI-generated art</span>
+            <div className="relative aspect-[5/2] overflow-hidden rounded-[10px] bg-deep">
+              {mission.id === "conjunction2019" ? (
+                <ConjunctionArt className="absolute inset-0 h-full w-full" />
+              ) : (
+                <MarsScene weather={mission.id === "dust2018" ? "Low" : "Very_High"} className="absolute inset-0 h-full w-full" />
+              )}
             </div>
             <div className="flex flex-1 flex-col gap-3 px-2.5 pb-2.5 pt-4">
-              <h2 className="text-2xl font-bold">{mission.title}</h2>
+              <h2 className="text-2xl">{mission.title}</h2>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.95rem]">
                 <span className="inline-flex items-center gap-1.5 font-semibold">
                   <Icon name="book" size={17} className="text-ink-2" />
@@ -137,7 +140,7 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
           playCode();
         }}
       >
-        <label htmlFor="code" className="font-display text-xl font-bold sm:whitespace-nowrap">
+        <label htmlFor="code" className="font-display text-xl sm:whitespace-nowrap">
           Have a mission code?
         </label>
         <input
@@ -149,13 +152,13 @@ function MissionSelect({ onStart }: { onStart: (missionId: MissionId, seed: numb
           }}
           placeholder="Enter mission code"
           aria-describedby={codeProblem ? "code-problem" : undefined}
-          className="min-h-12 flex-1 rounded-xl border border-line bg-white px-4 text-ink placeholder:text-ink-2/70 focus:border-dusk"
+          className="min-h-12 flex-1 rounded-xl border border-line bg-haze px-4 text-ink placeholder:text-ink-2 focus:border-dusk"
         />
         <button className="btn btn-primary" type="submit">
           Play code
         </button>
         {codeProblem ? (
-          <p id="code-problem" className="text-[0.95rem] text-[#A3203F] sm:basis-full">
+          <p id="code-problem" className="text-[0.95rem] text-danger sm:basis-full">
             {codeProblem}
           </p>
         ) : null}
@@ -174,7 +177,7 @@ function Outpost({ state, dispatch }: { state: GameState; dispatch: (action: Act
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-ink-2">{state.mission.title}</p>
-          <h1 className="tnum text-3xl font-extrabold sm:text-4xl">
+          <h1 className="tnum text-3xl sm:text-4xl">
             <Num rule="mars-day">Sol</Num> {state.solIndex + 1} <span className="text-ink-2">of {state.mission.lengthSols}</span>
           </h1>
         </div>
@@ -224,7 +227,7 @@ export function MissionApp() {
           <>
             {state ? (
               <button
-                className="rounded-xl px-3 py-2 text-ink-2 transition-colors hover:bg-white"
+                className="rounded-xl px-3 py-2 text-ink-2 transition-colors hover:bg-card"
                 onClick={() => dispatch({ type: "menu" })}
               >
                 Missions

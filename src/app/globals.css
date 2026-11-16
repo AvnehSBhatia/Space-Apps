@@ -5,25 +5,29 @@
  * Mars sunsets are blue, so the primary is a dusk blue; butterscotch is the dust and the sun.
  */
 :root {
-  --haze: #f3f5fa; /* page */
-  --card: #ffffff;
-  --line: #dce2ee; /* card borders */
-  --ink: #151a3a; /* text, night panels */
-  --ink-2: #4a5174; /* secondary text */
-  --dusk: #3d5bd9; /* primary */
-  --dusk-deep: #2e46b3;
-  --dusk-soft: #e7ecfc;
-  --sun: #f2a541;
-  --sun-soft: #fdf1dc;
-  --rust: #c8552b;
-  --air: #1fb58f;
-  --air-soft: #dff5ee;
-  --battery: #2b9fe0;
-  --battery-soft: #e0f1fb;
-  --food: #6cb33f;
-  --food-soft: #ebf5e2;
-  --danger: #e04867;
-  --danger-soft: #fce6ea;
+  /* Dealt by the taste skill: graphite-safety-orange, Sora / Figtree + Martian Mono, radius soft.
+     Graphite is the rover's instrument panel; the orange is Mars dust. */
+  --haze: #18191b; /* page ground */
+  --card: #222427; /* surface */
+  --line: #33353a; /* one hairline */
+  --ink: #eff0f1; /* text */
+  --ink-2: #9c9ea3; /* labels and meta only */
+  --dusk: #ff4a1f; /* the one action colour */
+  --dusk-deep: #ff6b45;
+  --dusk-soft: rgb(255 74 31 / 0.13);
+  --on-action: #18191b;
+  --sun: #f2b24a;
+  --sun-soft: rgb(242 178 74 / 0.13);
+  --rust: #ff4a1f;
+  --air: #6fd3a6;
+  --air-soft: rgb(111 211 166 / 0.12);
+  --battery: #7cb8ec;
+  --battery-soft: rgb(124 184 236 / 0.12);
+  --food: #b9d36a;
+  --food-soft: rgb(185 211 106 / 0.12);
+  --danger: #ff6b5e;
+  --danger-soft: rgb(255 107 94 / 0.14);
+  --deep: #111214; /* night panel */
 }
 
 @theme inline {
@@ -46,16 +50,20 @@
   --color-food-soft: var(--food-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-deep: var(--deep);
+  --color-on-action: var(--on-action);
   --font-display: var(--font-display-face), system-ui, sans-serif;
   --font-sans: var(--font-body-face), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, Menlo, monospace;
 }
 
 body {
   background: var(--haze);
   color: var(--ink);
   font-family: var(--font-body-face), system-ui, sans-serif;
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.6;
+  color-scheme: dark;
 }
 
 h1,
@@ -63,7 +71,25 @@ h2,
 h3,
 .font-display {
   font-family: var(--font-display-face), system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+h1 {
+  letter-spacing: -0.045em;
+}
+
+/* Instrument readouts: numbers and small data labels. */
+.readout {
+  font-family: var(--font-mono-face), ui-monospace, Menlo, monospace;
+  font-weight: 400;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
 .tnum {
@@ -73,8 +99,7 @@ h3,
 .card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow: 0 1px 2px rgb(21 26 58 / 0.04), 0 8px 24px -12px rgb(21 26 58 / 0.12);
+  border-radius: 16px;
 }
 
 /* Buttons */
@@ -85,9 +110,9 @@ h3,
   gap: 0.5rem;
   min-height: 52px;
   padding: 0.75rem 1.4rem;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid transparent;
-  font-weight: 700;
+  font-weight: 500;
   font-size: 1.05rem;
   line-height: 1.1;
   cursor: pointer;
@@ -98,8 +123,11 @@ h3,
     box-shadow 160ms ease;
   user-select: none;
 }
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
 .btn:active:not(:disabled) {
-  transform: translateY(1px) scale(0.99);
+  transform: translateY(1px);
 }
 .btn:disabled {
   opacity: 0.45;
@@ -107,8 +135,7 @@ h3,
 }
 .btn-primary {
   background: var(--dusk);
-  color: #fff;
-  box-shadow: 0 6px 16px -8px rgb(61 91 217 / 0.7);
+  color: var(--on-action);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--dusk-deep);
@@ -119,8 +146,8 @@ h3,
   border-color: var(--line);
 }
 .btn-quiet:hover:not(:disabled) {
-  border-color: #b9c3da;
-  background: #fafbfe;
+  border-color: #4a4d53;
+  background: #2a2c30;
 }
 .btn-ghost-dark {
   background: transparent;
@@ -144,7 +171,8 @@ h3,
   width: 100%;
   height: 12px;
   border-radius: 999px;
-  background: linear-gradient(to right, var(--food) 0%, var(--food) var(--fill, 0%), #e3e8f2 var(--fill, 0%), #e3e8f2 100%);
+  height: 8px;
+  background: linear-gradient(to right, var(--dusk) 0%, var(--dusk) var(--fill, 0%), #3a3d42 var(--fill, 0%), #3a3d42 100%);
   cursor: pointer;
 }
 .slider::-webkit-slider-thumb {
@@ -152,17 +180,17 @@ h3,
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--food);
-  box-shadow: 0 2px 8px rgb(21 26 58 / 0.25);
+  background: var(--ink);
+  border: 6px solid var(--dusk);
+  box-shadow: 0 0 0 4px var(--haze);
 }
 .slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--food);
-  box-shadow: 0 2px 8px rgb(21 26 58 / 0.25);
+  background: var(--ink);
+  border: 6px solid var(--dusk);
+  box-shadow: 0 0 0 4px var(--haze);
 }
 .slider:disabled {
   opacity: 0.4;
@@ -176,7 +204,7 @@ h3,
   height: 30px;
   flex: none;
   border-radius: 999px;
-  background: #d5dbe8;
+  background: #3a3d42;
   transition: background-color 180ms ease;
 }
 .switch::after {
@@ -187,8 +215,7 @@ h3,
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(21 26 58 / 0.3);
+  background: var(--ink);
   transition: transform 180ms ease;
 }
 .switch[data-on="true"] {

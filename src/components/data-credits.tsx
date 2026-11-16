@@ -16,7 +16,7 @@ export function DataCredits() {
           data saved on {day(spaceWeather.fetchedAt)}; it is real, not live.
         </p>
         <p className="mt-1">
-          Illustrations are AI-generated. Built for the 2026 NASA Space Apps Challenge. Not affiliated with or endorsed by NASA.
+          Built for the 2026 NASA Space Apps Challenge. Not affiliated with or endorsed by NASA.
         </p>
       </div>
     </footer>

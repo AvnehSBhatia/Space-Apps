@@ -6,16 +6,16 @@ import { game } from "@/game";
 import { Icon, type IconName } from "./icons";
 
 const KIND_STYLE: Record<RuleCard["kind"], { cls: string; label: string }> = {
-  "NASA measurement": { cls: "bg-battery-soft text-[#13689A]", label: "Real NASA data" },
-  physics: { cls: "bg-sun-soft text-[#8A5408]", label: "Physics" },
-  "game rule": { cls: "bg-air-soft text-[#0E7A5F]", label: "Game rule" },
+  "NASA measurement": { cls: "bg-battery-soft text-battery", label: "Real NASA data" },
+  physics: { cls: "bg-sun-soft text-sun", label: "Physics" },
+  "game rule": { cls: "bg-air-soft text-air", label: "Game rule" },
 };
 
 export const KIND_LABEL = (kind: RuleCard["kind"]) => KIND_STYLE[kind].label;
 
 export function KindBadge({ kind }: { kind: RuleCard["kind"] }) {
   const style = KIND_STYLE[kind];
-  return <span className={`${style.cls} inline-flex rounded-full px-2.5 py-0.5 text-sm font-semibold`}>{style.label}</span>;
+  return <span className={`${style.cls} inline-flex rounded-full px-2.5 py-0.5 text-[13px] font-medium`}>{style.label}</span>;
 }
 
 const RULE_ICON: Record<string, IconName> = {
@@ -32,16 +32,16 @@ const RULE_ICON: Record<string, IconName> = {
 export function RuleCardView({ card }: { card: RuleCard }) {
   return (
     <div className="flex gap-4">
-      <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-haze text-dusk">
+      <span className="grid h-11 w-11 flex-none place-items-center rounded-xl border border-line text-dusk">
         <Icon name={RULE_ICON[card.id] ?? "book"} size={24} />
       </span>
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h3 className="text-xl font-bold text-ink">{card.title}</h3>
+          <h3 className="text-xl text-ink">{card.title}</h3>
           <KindBadge kind={card.kind} />
         </div>
         <p className="text-ink-2">{card.plain}</p>
-        <p className="tnum rounded-xl bg-haze px-3 py-2 text-[0.95rem] text-ink">{card.formula}</p>
+        <p className="readout rounded-xl bg-haze px-3 py-2 text-[13px] leading-relaxed text-ink">{card.formula}</p>
         {card.source ? <p className="text-sm text-ink-2">Source: {card.source}</p> : null}
       </div>
     </div>
@@ -75,7 +75,7 @@ export function RuleCardsProvider({ children }: { children: ReactNode }) {
         onClick={(event) => {
           if (event.target === dialogRef.current) setOpenId(null);
         }}
-        className="card m-auto w-[min(92vw,32rem)] p-0 backdrop:bg-ink/50 backdrop:backdrop-blur-sm"
+        className="card m-auto w-[min(92vw,32rem)] p-0 backdrop:bg-black/60 backdrop:backdrop-blur-sm text-ink"
         aria-label={card ? card.title : "Rule card"}
       >
         {card ? (
