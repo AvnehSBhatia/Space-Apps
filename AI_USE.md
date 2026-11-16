@@ -13,6 +13,8 @@ Add a row every time an AI tool produces something that ends up in the project. 
 | 2026-11-15 | Claude Code (Anthropic) | Shared contracts, reference implementations of the brain (`src/brain`) and the game rules (`src/game`), and the `/play` test harness | Second commit; `Co-Authored-By` trailer |
 | 2026-11-15 | Claude Code (Anthropic) | Twelve simulated judge reviews of the concept against the official rubric; their feedback changed the design | Summarised in `docs/SPEC.md` |
 | 2026-11-15 | Claude Code (Anthropic) | Drafts of the spec, the three part briefs, the demo script and the project page text | `docs/` |
+| 2026-11-15 | Claude Code (Anthropic) | The game UI (Part B): screens, components, styles and icons | `src/app`, `src/components`; `Co-Authored-By` trailer |
+| 2026-11-15 | OpenAI image generation via Codex CLI, directed by Claude Code | Page design mockups (not shipped) and the illustrations: four outpost weather scenes and three mission card pictures. No people, no NASA marks. Each file carries a visible "AI-generated" watermark, and the UI labels them too | `public/art/` |
 
 ## How we mark it
 
